@@ -29,5 +29,6 @@
 #include "rt_mem.h"    // NOLINT
 #include "rt_mutex.h"  // NOLINT
 #include "rt_check.h"  // NOLINT
+#include "rt_env.h"    // NOLINT
 
 #endif  // INCLUDE_RT_BASE_RT_HEADER_H_

@@ -24,17 +24,15 @@
 
 #include "string.h"
 #include <map>
+#include <functional>
 
 #include "rt_header.h"
 
-#include "RTInputStreamHandler.h"
-#include "RTInputStreamManager.h"
-#include "RTOutputStreamHandler.h"
-#include "RTOutputStreamManager.h"
 #include "RTTaskNodeContext.h"
 #include "RTTaskNodeContextManager.h"
 #include "RTTaskNodeOptions.h"
 #include "RTTaskNodeFactory.h"
+#include "RTNodeCommon.h"
 
 typedef struct outputStreamLinkMap {
     int outputStreamIndex;
@@ -48,6 +46,10 @@ typedef struct _RTTaskNodeInfo {
 } RTTaskNodeInfo;
 
 class RTBufferListener;
+class RTInputStreamHandler;
+class RTInputStreamManager;
+class RTOutputStreamHandler;
+class RTOutputStreamManager;
 class RTSchedulerQueue;
 class RTTaskNode {
  public:
@@ -77,9 +79,9 @@ class RTTaskNode {
     void setMaxInputStreamQueueSize(INT32 maxQueueSize);
     void setMaxBatchPrcoessSize(INT32 maxBatchSize);
     void setQueueSizeCallbacks(
-            RTInputStreamManager::queueSizeCallback becomesFullCallback,
-            RTInputStreamManager::queueSizeCallback becomesNotFullCallback,
-            RTInputStreamManager::queueSizeCallback becomesEmptyCallback);
+            std::function<void(RTInputStreamManager*, bool*)> becomesFullCallback,
+            std::function<void(RTInputStreamManager*, bool*)> becomesNotFullCallback,
+            std::function<void(RTInputStreamManager*, bool*)> becomesEmptyCallback);
 
     RT_RET initialize(int node_id, RTTaskNodeInfo *nodeInfo) { return RT_OK; }
 

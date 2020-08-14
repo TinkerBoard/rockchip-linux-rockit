@@ -24,6 +24,11 @@
 #include "rt_header.h"
 #include "RTTaskGraph.h"
 
+typedef enum RTUVCMode {
+    RT_UVC_MODE_NORMAL,
+    RT_UVC_MODE_EPTZ
+} RTUVCMode;
+
 class RTUVCGraph : public RTTaskGraph {
  public:
     explicit RTUVCGraph(const char* tagName);
@@ -36,14 +41,14 @@ class RTUVCGraph : public RTTaskGraph {
     RT_RET observeUVCOutputStream(std::function<RT_RET(RTMediaBuffer *)> streamCallback);
     RT_RET updateCameraParams(RtMetaData *params);
     RT_RET updateEncoderParams(RtMetaData *params);
-
-    RT_RET openEptz();
-    RT_RET closeEptz();
+    RT_RET updateEPTZParams(RtMetaData *params);
 
  private:
-    RT_RET initialize();
+    RT_RET initialize(const char* tagName);
     RT_RET deinitialize();
-    // functions defined for UVC logic.
+
+ private:
+    RTUVCMode mMode = RT_UVC_MODE_NORMAL;
 };
 
 #endif  // SRC_RT_TASK_APP_GRAPH_RTUVCGRAPH_H_

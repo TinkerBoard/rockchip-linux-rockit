@@ -77,6 +77,7 @@ class RTTaskGraph {
     RT_RET observeOutputStream(const std::string& streamName,
             INT32 streamId,
             std::function<RT_RET(RTMediaBuffer *)> streamCallback);
+    RT_RET cancelObserveOutputStream(INT32 streamId);
 
     RT_RET addSubGraph(const char *graphConfig);
     RT_RET removeSubGraph(const char *graphConfig);

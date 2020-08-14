@@ -26,7 +26,7 @@ enum {
     kKeyFormatDuration   = MKTAG('f', 'd', 'u', 'r'),  // UINT64
     kKeyFormatEOS        = MKTAG('f', 'e', 'o', 's'),
     kKeyFormatUri        = MKTAG('f', 'u', 'r', 'i'),
-    kKeyUserAgent        = MKTAG('u', 's', 'a', 't'),
+    kKeyUriHeaders       = MKTAG('u', 'r', 'h', 'd'),
     kKeyProtocol         = MKTAG('p', 't', 'c', 'l'),
     kKeyTimeBaseNum      = MKTAG('t', 'i', 'b', 'n'),
     kKeyTimeBaseDen      = MKTAG('t', 'i', 'b', 'd'),
@@ -59,12 +59,6 @@ enum {
     kKeyVCodecChromaLocation = MKTAG('v', 'c', 'l', 'o'),  // INT32
     kKeyVCodecBufferCount    = MKTAG('v', 'c', 'b', 'c'),  // INT32
     kKeyVCodecBufferSize     = MKTAG('v', 'c', 'b', 's'),  // INT32
-
-    /* video camera features*/
-    kKeyVCaptureBufType      = MKTAG('v', 'p', 'b', 't'),  // INT32
-    kKeyVCaptureUseLIBV4L2   = MKTAG('v', 'p', 'u', 'v'),  // INT32
-    kKeyVCaptureMemType      = MKTAG('v', 'p', 'm', 't'),  // INT32
-    kKeyVCaptureDevice       = MKTAG('v', 'p', 'r', 'd'),  // char
 
     /* video extra features*/
     kKeyVCodecGopSize        = MKTAG('g', 'p', 's', 'z'),  // INT32 encoder feature
@@ -177,7 +171,6 @@ enum {
     kKeySettingQueryCmd        = MKTAG('s', 'q', 'u', 'y'),
 
     /* for new pipeline */
-    kKeyOutputStreamType       = MKTAG('o', 'p', 's', 't'),    // INT32
     kKeyPipeInvokeCmd          = MKTAG('p', 'c', 'm', 'd'),    // const char *
     kKeyTaskNodeId             = MKTAG('t', 'n', 'i', 'd'),    // INT32
 };

@@ -98,7 +98,7 @@ enum RTSeekType {
 typedef struct _RTMediaUri {
     char  *mUri;
     INT32  mUriLength;
-    char   mUserAgent[256];
+    char   mHeaders[4096];
     char   mVersion[32];
     void  *mDataSource;
 } RTMediaUri;

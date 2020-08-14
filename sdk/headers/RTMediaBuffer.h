@@ -128,8 +128,7 @@ class RTMediaBuffer : public RTObject {
     RT_BOOL isRegistered();
 
     RT_BOOL isEOS(INT32 id);
-    RT_BOOL isEOS() { return isEOS(-1); }
-
+    RT_BOOL isEOS();
     // refs manage
     void    addRefs();
     INT32   refsCount();

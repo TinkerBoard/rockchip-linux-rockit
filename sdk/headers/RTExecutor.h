@@ -68,7 +68,7 @@ class RTExecutor {
 // A multithreaded executor based on a thread pool.
 class RTThreadPoolExecutor : public RTExecutor {
  public:
-    static RTExecutor* create(void *extendOptions);
+    static RTExecutor* create(void *extendOptions, int numThreads = 4);
 
     explicit RTThreadPoolExecutor(int numThreads);
     ~RTThreadPoolExecutor() override;
@@ -82,7 +82,7 @@ class RTThreadPoolExecutor : public RTExecutor {
     size_t getStackSize() const { return mStackSize; }
 
  private:
-    RTThreadPoolExecutor(const RTThreadOptions& threadOptions, int numThreads);
+    RTThreadPoolExecutor(const RTThreadOptions& threadOptions, INT32 numThreads);
 
     // Saves the value of the stack size option and starts the thread pool.
     void start();
