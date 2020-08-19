@@ -26,6 +26,7 @@
 #include "rt_header.h"
 #include "RTThreadOptions.h"
 #include "RTThreadPool.h"
+#include "rt_metadata.h"
 
 // Abstract base class for the task queue.
 // NOTE: The task queue orders the ready tasks by their priorities. This
@@ -68,9 +69,9 @@ class RTExecutor {
 // A multithreaded executor based on a thread pool.
 class RTThreadPoolExecutor : public RTExecutor {
  public:
-    static RTExecutor* create(void *extendOptions, int numThreads = 4);
+    static RTExecutor* create(RtMetaData *extendOptions);
 
-    explicit RTThreadPoolExecutor(int numThreads);
+    explicit RTThreadPoolExecutor(INT32 numThreads);
     ~RTThreadPoolExecutor() override;
 
  public:

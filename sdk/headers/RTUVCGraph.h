@@ -24,11 +24,6 @@
 #include "rt_header.h"
 #include "RTTaskGraph.h"
 
-typedef enum RTUVCMode {
-    RT_UVC_MODE_NORMAL,
-    RT_UVC_MODE_EPTZ
-} RTUVCMode;
-
 class RTUVCGraph : public RTTaskGraph {
  public:
     explicit RTUVCGraph(const char* tagName);
@@ -43,12 +38,21 @@ class RTUVCGraph : public RTTaskGraph {
     RT_RET updateEncoderParams(RtMetaData *params);
     RT_RET updateEPTZParams(RtMetaData *params);
 
+    RT_RET enableEPTZ(RT_BOOL enableEPTZ);
+    RT_RET setZoom(float val);
+
  private:
     RT_RET initialize(const char* tagName);
     RT_RET deinitialize();
 
  private:
-    RTUVCMode mMode = RT_UVC_MODE_NORMAL;
+    RT_BOOL mEnableEPTZ = RT_FALSE;
+    float mZoom = 1.0f;
+    INT32 mWidth;
+    INT32 mHeight;
+    INT32 mWStride;
+    INT32 mHStride;
+    std::function<RT_RET(RTMediaBuffer *)> mStreamCallback = NULL;
 };
 
 #endif  // SRC_RT_TASK_APP_GRAPH_RTUVCGRAPH_H_

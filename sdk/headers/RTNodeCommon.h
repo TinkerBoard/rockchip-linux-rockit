@@ -43,11 +43,13 @@ namespace rockit {
 #define NODE_NAME_ROCKX         "rockx"
 #define NODE_NAME_FWRITE        "fwrite"
 #define NODE_NAME_RKRGA         "rkrga"
+#define NODE_NAME_EPTZ          "rkeptz"
+
 #define NODE_NAME_RESAMPLE      "resample"
 #define NODE_NAME_ALSA_CAPTURE  "alsa_capture"
 #define NODE_NAME_ALSA_PLAYBACK "alsa_playback"
 #define NODE_NAME_ALGORITHM_3A  "alg_3a"
-#define NODE_NAME_EPTZ          "rkeptz"
+#define NODE_NAME_ALGORITHM_3A_ANR  "alg_anr"
 #define NODE_NAME_ALGORITHM_SKV_AEC "skv_aec"
 #define NODE_NAME_ALGORITHM_SKV_AGC "skv_agc"
 #define NODE_NAME_ALGORITHM_SKV_BF  "skv_bf"
@@ -77,12 +79,14 @@ namespace rockit {
 // common root types for task node.
 #define KEY_ROOT_PIPE_ID                 "pipe_"
 #define KEY_ROOT_NODE_ID                 "node_"
+#define KEY_ROOT_EXEC_ID                 "executor_"
 #define KEY_ROOT_INPUT_STREAM_ID         "stream_input_"
 #define KEY_ROOT_OUTPUT_STREAM_ID        "stream_output_"
 #define KEY_ROOT_NODE_OPTS               "node_opts"
 #define KEY_ROOT_NODE_OPTS_EXTRA         "node_opts_extra"
 #define KEY_ROOT_STREAM_OPTS             "stream_opts"
 #define KEY_ROOT_STREAM_OPTS_EXTRA       "stream_opts_extra"
+#define KEY_ROOT_EXEC_OPTS               "executor_opts"
 
 // common parameters for task node. subnodes of KEY_ROOT_NODE_OPTS
 #define OPT_NODE_NAME                    "node_name"
@@ -94,6 +98,7 @@ namespace rockit {
 #define OPT_NODE_BUFFER_SIZE             "node_buff_size"
 #define OPT_NODE_BUFFER_ALLOC_TYPE       "node_buff_alloc_type"
 #define OPT_NODE_TRANS_RECT              "node_trans_rect"
+#define OPT_NODE_DISPATCH_EXEC           "node_disp_exec"
 
 #define OPT_FILE_READ_SIZE               "opt_read_size"
 
@@ -155,6 +160,8 @@ namespace rockit {
 #define OPT_AUDIO_AGC_LEVEL              "opt_agc_level"
 #define OPT_AUDIO_AGC_IS_SPEECH          "opt_agc_is_speech"
 #define OPT_AUDIO_BF_MODE                "opt_bf_mode"
+#define OPT_AUDIO_ANR_DEGREE             "opt_anr_degree"
+#define OPT_TIMESTAMP                    "opt_timestamp"
 
 
 // common parameters for filter: RKNN with move detection.
@@ -202,6 +209,8 @@ namespace rockit {
 
 #define OPT_AUDIO_ALGORITHM             "opt_audio_algorithm"
 
+#define OPT_EXEC_THREAD_NUM             "exec_thread_num"
+
 /*
  * AI Server  -- {DBUS | RNDIS} -- Remote HOST(TV AI)
  *
@@ -230,6 +239,44 @@ namespace rockit {
 
 #define RT_PARAM_STRING_APPEND(s, s1, s2)  \
         s.append(s1).append("=").append(s2).append("\n")
+
+#define RT_STRING_LINK_STREAM(s, format, upNodeId, downNodeId)          \
+        s.append(format).append("_").append(std::to_string(upNodeId))   \
+        .append("_").append(std::to_string(downNodeId))
+
+#define RT_NODE_CONFIG_STRING_APPEND(s, key, value) \
+        s.append("\"").append(key).append("\"")     \
+        .append(" : ").append("\"").append(value).append("\",\n")
+
+#define RT_NODE_CONFIG_NUMBER_APPEND(s, key, value) \
+        s.append("\"").append(key).append("\"")     \
+        .append(" : ").append(std::to_string(value)).append(",\n")
+
+#define RT_NODE_CONFIG_STRING_LAST_APPEND(s, key, value) \
+        s.append("\"").append(key).append("\"")          \
+        .append(" : ").append("\"").append(value).append("\"\n")
+
+#define RT_NODE_CONFIG_NUMBER_LAST_APPEND(s, key, value) \
+        s.append("\"").append(key).append("\"")          \
+        .append(" : ").append(std::to_string(value)).append("\n")
+
+#define RT_NODE_TAG_APPEND(s, id) \
+        s.append("\"").append(KEY_ROOT_NODE_ID).append(std::to_string(id)).append("\": {\n")
+
+#define RT_PIPE_TAG_APPEND(s, id) \
+        s.append("\"").append(KEY_ROOT_PIPE_ID).append(std::to_string(id)).append("\": {\n")
+
+#define RT_NODE_OPTS_APPEND(s) \
+        s.append("\"").append(KEY_ROOT_NODE_OPTS).append("\": {\n")
+
+#define RT_STREAM_OPTS_APPEND(s) \
+        s.append("\"").append(KEY_ROOT_STREAM_OPTS).append("\": {\n")
+
+#define RT_TAG_END(s) \
+        s.append("},\n")
+
+#define RT_TAG_LAST_END(s) \
+        s.append("}\n")
 
 typedef enum _RTStreamId {
     RT_STREAM_ID_MAIN = 0,

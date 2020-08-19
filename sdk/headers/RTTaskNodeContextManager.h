@@ -38,8 +38,8 @@ class RTTaskNodeContextManager {
     RT_RET initialize(
         std::string nodeName,
         INT32 nodeId,
-        const std::vector<RTStreamInfo *> &inputInfo,
-        const std::vector<RTStreamInfo *> &outputInfo,
+        std::vector<RTStreamInfo *> *inputInfo,
+        std::vector<RTStreamInfo *> *outputInfo,
         bool isParallelRunning);
 
     RT_RET prepareForRun(RtMetaData *options);
@@ -49,8 +49,8 @@ class RTTaskNodeContextManager {
 
  private:
     std::unique_ptr<RTTaskNodeContext> mDefaultContext;
-    std::vector<RTStreamInfo *> mInputInfos;
-    std::vector<RTStreamInfo *> mOutputInfos;
+    std::vector<RTStreamInfo *> *mInputInfos;
+    std::vector<RTStreamInfo *> *mOutputInfos;
     bool        mParallelRunning;
     RtMetaData* mOptions;
     std::string mNodeName;

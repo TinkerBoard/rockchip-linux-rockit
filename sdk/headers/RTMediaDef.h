@@ -228,6 +228,7 @@ typedef enum _RTTrackType {
 #define RT_VIDEO_FMT_MASK                   0x000f0000
 #define RT_VIDEO_FMT_YUV                    0x00000000
 #define RT_VIDEO_FMT_RGB                    0x00010000
+#define RT_VIDEO_FMT_FBC                    0x00100000
 
 typedef enum _RTVideoFormat {
     RT_FMT_YUV420SP        = RT_VIDEO_FMT_YUV,         /* YYYY... UV...            */
@@ -259,6 +260,7 @@ typedef enum _RTVideoFormat {
     RT_FMT_ABGR8888,                                   /* 32-bit RGB               */
     RT_FMT_RGB_BUTT,
     RT_FMT_BUTT            = RT_FMT_RGB_BUTT,
+    RT_FMT_FBC_AFBC_V1     = RT_VIDEO_FMT_FBC,         /*for fbc                       */
 } RTVideoFormat;
 
 typedef enum _RTVideoRCMode {

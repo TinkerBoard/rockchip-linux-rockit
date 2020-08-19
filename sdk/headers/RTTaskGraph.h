@@ -25,6 +25,7 @@
 #include <memory>
 #include <map>
 #include <functional>
+#include <stdarg.h>
 
 #include "rt_header.h"
 #include "rt_metadata.h"
@@ -55,39 +56,65 @@ class RTGraphOutputStream;
 class RTExecutor;
 class RTScheduler;
 class RTMediaBuffer;
-class RTNodeParser;
+class RTGraphParser;
 
 class RTTaskGraph {
  public:
     explicit RTTaskGraph(const char* tagName);
     virtual ~RTTaskGraph();
 
-    RT_RET autoBuild(const char* configFile);
-    RT_RET prepareForRun(RtMetaData *options);
-    RT_RET cleanupAfterRun();
-    RT_RET invoke(INT32 cmd, RtMetaData *params);
-    RT_RET dump();
-    RT_RET startRun();
-    RT_RET finishRun();
-    RT_RET waitUntilDone();
-    RT_RET waitForObservedOutput();
+    RT_RET   autoBuild(const char* configFile);
+    RT_RET   prepareForRun(RtMetaData *options);
+    RT_RET   cleanupAfterRun();
+    RT_RET   invoke(INT32 cmd, RtMetaData *params);
+    RT_RET   dump();
+    RT_RET   startRun();
+    RT_RET   finishRun();
+    RT_RET   waitUntilDone();
+    RT_RET   waitForObservedOutput();
 
-    void sendInterrupt(std::string reason);
-    void updateThrottledNodes(RTInputStreamManager* stream, bool *streamWasFull);
-    RT_RET observeOutputStream(const std::string& streamName,
-            INT32 streamId,
-            std::function<RT_RET(RTMediaBuffer *)> streamCallback);
-    RT_RET cancelObserveOutputStream(INT32 streamId);
+    void     sendInterrupt(std::string reason);
+    void     updateThrottledNodes(RTInputStreamManager* stream, bool *streamWasFull);
+    RT_RET   observeOutputStream(const std::string& streamName,
+              INT32 streamId,
+              std::function<RT_RET(RTMediaBuffer *)> streamCallback);
+    RT_RET   cancelObserveOutputStream(INT32 streamId);
 
-    RT_RET addSubGraph(const char *graphConfig);
-    RT_RET removeSubGraph(const char *graphConfig);
+    RT_RET   addSubGraph(const char *graphConfigFile);
+    RT_RET   removeSubGraph(const char *graphConfigFile);
+
+    RTTaskNode *createNode(std::string nodeConfig, std::string streamConfig);
+    RT_RET   linkNode(RTTaskNode *srcNode, RTTaskNode *dstNode);
+    RT_RET   linkNode(INT32 srcNodeId, INT32 dstNodeId);
+    RT_RET   unlinkNode(RTTaskNode *srcNode, RTTaskNode *dstNode);
+    RT_RET   unlinkNode(INT32 srcNodeId, INT32 dstNodeId);
+
+    template <class T, class... Args>
+    RT_RET   linkMultiNode(T src, T dst, Args... rest) {
+        RT_RET ret = linkNode(src, dst);
+        if (ret != RT_OK) {
+            RT_LOGE("src node %d dst node %d link failed", src->getID(), dst->getID());
+        } else {
+            linkMultiNode(dst, rest...);
+        }
+        return ret;
+    }
+
+    template <class T>
+    RT_RET linkMultiNode(T end) {
+        return RT_OK;
+    }
 
  private:
     RT_RET prepare();
     RT_RET autoLinkSource();
     RT_RET autoUnlinkSource(INT32 nodeId);
     RT_RET prepareNodeForRun(RTTaskNode *node, RtMetaData *options);
-    RT_RET buildTaskNode(INT32 pipeId, INT32 nodeId, RTNodeParser* nodeParser);
+    RT_RET buildTaskNode(INT32 pipeId, INT32 nodeId, RTGraphParser* nodeParser);
+    RT_RET buildExecutors(RTGraphParser *parser);
+    RT_RET buildNodes(RTGraphParser *parser);
+    RT_RET buildSubGraph(RTGraphParser *graphParser);
+    RTTaskNode *createNodeByText(const char *graphConfig);
 
  protected:
     std::string     mTagName;
@@ -96,7 +123,7 @@ class RTTaskGraph {
     RtMutex         mErrorMutex;
     RTScheduler    *mScheduler;
 
-    std::vector<RTExecutor *>                             mExecutors;
+    std::map<INT32, RTExecutor *>                         mExecutors;
     std::map<INT32/* node id */, RTTaskNode *>            mNodes;
     std::map<INT32, RTInputStreamManager *>               mFullInputStreams;
     std::map<INT32/* node id */, RTInputStreamManager *>  mInputManagers;

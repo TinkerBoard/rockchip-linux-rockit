@@ -136,6 +136,10 @@ class RTTaskNode {
     virtual RT_RET initSupportOptions() { return RT_OK; }
     virtual RT_RET invokeInternal(RtMetaData *meta) { return RT_ERR_UNSUPPORT; }
 
+ private:
+    RT_RET addInputStreams(RTInputStreamManager *inputManager);
+    RT_RET addOutputStreams(RTOutputStreamManager *outputManager);
+
  protected:
     INT32 mNodeId;
     RTInputStreamHandler  *mInputHandler;
@@ -182,6 +186,8 @@ class RTTaskNode {
     RTSchedulerQueue *mSchedulerQueue = NULL;
     std::map<std::string/* name */, RTTaskNodeOption> mSupportOptions;
     std::vector<INT32> mSourceNodes;
+    std::vector<RTStreamInfo *> mInputStreamInfos;
+    std::vector<RTStreamInfo *> mOutputStreamInfos;
 };
 
 #endif  // SRC_RT_TASK_TASK_GRAPH_RTTASKNODE_H_
