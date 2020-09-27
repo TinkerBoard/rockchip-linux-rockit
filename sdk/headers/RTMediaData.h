@@ -83,7 +83,6 @@ RT_RET rt_mediabuf_goto_frame(RTMediaBuffer* media_buf, RTFrame* rt_frame);
 /* utils for track parameters */
 RT_RET rt_medatdata_from_trackpar(RtMetaData* meta, RTTrackParam* tpar);
 RT_RET rt_medatdata_goto_trackpar(RtMetaData* meta, RTTrackParam* tpar);
-RT_RET rt_utils_dump_track(RTTrackParam* tpar, RT_BOOL full = false);
 RT_RET rt_utils_dump_track(RtMetaData* meta, RT_BOOL full = false);
 
 #endif  // SRC_RT_MEDIA_INCLUDE_RTMEDIADATA_H_

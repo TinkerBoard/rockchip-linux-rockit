@@ -55,20 +55,27 @@ class RTTaskNodeContext {
     void resume() { mSuspend = false; }
     bool isSuspend() { return mSuspend; }
 
-    std::vector<RTMediaBuffer *>& inputs(std::string streamType = "none") {
-        if (streamType == "none") {
-            return mInputs.begin()->second;
-        } else {
-            return mInputs[streamType];
-        }
+    RT_BOOL hasInput(std::string streamType) {
+        return (mInputs.find(streamType) != mInputs.end()) ? RT_TRUE : RT_FALSE;
     }
 
+    INT32 inputsSize(std::string streamType = "none") {
+        RtMutex::RtAutolock autoLock(mInputMutex);
+        if (streamType == "none") {
+            return mInputs.begin()->second.size();
+        } else {
+            return mInputs[streamType].size();
+        }
+    }
     RTStreamInfo *getInputInfo(std::string streamType);
     RTStreamInfo *getInputInfo() { return mInputInfos->front(); }
     RTStreamInfo *getOutputInfo(std::string streamName);
     RTStreamInfo *getOutputInfo() { return mOutputInfos->front(); }
 
     RTOutputStreamShared *outputs(std::string streamName = "none") {
+        if (mOutputs.size() == 0)
+            return RT_NULL;
+
         if (streamName == "none") {
             return mOutputs.begin()->second;
         } else {
@@ -84,6 +91,8 @@ class RTTaskNodeContext {
     INT32 getMaxBatchPrcoessSize() { return mMaxBatchProcessSize; }
 
     RTMediaBuffer *dequeInputBuffer(std::string streamType = "none");
+    RTMediaBuffer *inputHeadBuffer(std::string streamType = "none");
+    RT_RET queueInputBuffer(RTMediaBuffer *packet, std::string streamTpye = "none");
     RTMediaBuffer *dequeOutputBuffer(
                         RT_BOOL block = RT_TRUE,
                         UINT32 size = 0,
@@ -91,6 +100,17 @@ class RTTaskNodeContext {
     RT_RET queueOutputBuffer(RTMediaBuffer *packet, std::string streamType = "none");
     RT_BOOL inputIsEmpty(std::string streamType = "none");
     RT_BOOL outputIsEmpty(std::string streamType = "none");
+
+    RT_RET dump();
+
+ private:
+    std::vector<RTMediaBuffer *>& inputs(std::string streamType = "none") {
+        if (streamType == "none") {
+            return mInputs.begin()->second;
+        } else {
+            return mInputs[streamType];
+        }
+    }
 
  private:
     std::map<std::string, std::vector<RTMediaBuffer *>> mInputs;
@@ -102,6 +122,7 @@ class RTTaskNodeContext {
     INT32 mMaxBatchProcessSize = 4;
     std::vector<RTStreamInfo *> *mInputInfos;
     std::vector<RTStreamInfo *> *mOutputInfos;
+    RtMutex                      mInputMutex;
 };
 
 #endif  // SRC_RT_TASK_TASK_GRAPH_RTTASKNODECONTEXT_H_

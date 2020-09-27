@@ -25,6 +25,8 @@
 #include <list>
 #include <vector>
 
+#include "rt_string_utils.h"
+
 namespace rockit {
 
 /*
@@ -44,6 +46,8 @@ namespace rockit {
 #define NODE_NAME_FWRITE        "fwrite"
 #define NODE_NAME_RKRGA         "rkrga"
 #define NODE_NAME_EPTZ          "rkeptz"
+#define NODE_NAME_STASTERIA     "st_asteria"  // sensetime asteria
+#define NODE_NAME_AIMATTING     "ai_matting"
 
 #define NODE_NAME_RESAMPLE      "resample"
 #define NODE_NAME_ALSA_CAPTURE  "alsa_capture"
@@ -58,6 +62,9 @@ namespace rockit {
 #define NODE_NAME_VIDEO_SINK    "video_sink"
 #define NODE_NAME_FILTER_IMAGE  "filter_image"
 #define NODE_NAME_FILTER_SCALER "filter_scaler"
+#define NODE_NAME_VOLUME        "filter_volume"
+#define NODE_NAME_LINK_OUTPUT   "link_output"
+#define NODE_NAME_SOURCE_EXTERNAL  "external_source"
 
 #define NODE_PORT_SOURCE  "source"
 #define NODE_PORT_DEVICE  "device"
@@ -80,6 +87,7 @@ namespace rockit {
 #define KEY_ROOT_PIPE_ID                 "pipe_"
 #define KEY_ROOT_NODE_ID                 "node_"
 #define KEY_ROOT_EXEC_ID                 "executor_"
+#define KEY_ROOT_LINK_MODE_ID            "link_"
 #define KEY_ROOT_INPUT_STREAM_ID         "stream_input_"
 #define KEY_ROOT_OUTPUT_STREAM_ID        "stream_output_"
 #define KEY_ROOT_NODE_OPTS               "node_opts"
@@ -87,9 +95,13 @@ namespace rockit {
 #define KEY_ROOT_STREAM_OPTS             "stream_opts"
 #define KEY_ROOT_STREAM_OPTS_EXTRA       "stream_opts_extra"
 #define KEY_ROOT_EXEC_OPTS               "executor_opts"
+#define KEY_ROOT_DEFAULT_LINK_MODE       "default_mode_link"
 
 // common parameters for task node. subnodes of KEY_ROOT_NODE_OPTS
 #define OPT_NODE_NAME                    "node_name"
+
+#define OPT_LINK_NAME                    "link_name"
+#define OPT_LINK_SHIP                    "link_ship"
 
 // extra parameters for task node. subnodes of KEY_ROOT_NODE_OPTS_EXTRA
 #define OPT_NODE_SOURCE_URI              "node_source_uri"
@@ -148,7 +160,6 @@ namespace rockit {
 #define OPT_AUDIO_CHANNEL_LAYOUT         "opt_channel_layout"
 #define OPT_AUDIO_SAMPLE_RATE            "opt_samaple_rate"
 #define OPT_AUDIO_BITRATE                "opt_bitrate"
-#define OPT_AUDIO_VOLUME                 "opt_volume"
 #define OPT_AUDIO_SOURCE_URI             "opt_source_uri"
 #define OPT_AUDIO_ANS                    "opt_ans"
 #define OPT_AUDIO_FORMAT                 "opt_format"
@@ -161,8 +172,16 @@ namespace rockit {
 #define OPT_AUDIO_AGC_IS_SPEECH          "opt_agc_is_speech"
 #define OPT_AUDIO_BF_MODE                "opt_bf_mode"
 #define OPT_AUDIO_ANR_DEGREE             "opt_anr_degree"
-#define OPT_TIMESTAMP                    "opt_timestamp"
+#define OPT_AUDIO_AEC_ENABLE             "opt_aec_enable"
+#define OPT_AUDIO_AEC_DELAY              "opt_aec_delay"
+#define OPT_AUDIO_AEC_NLP_URI            "opt_aec_nlp_uri"
+#define OPT_AUDIO_AEC_NLP_PLUS_URI       "opt_aec_nlp_plus_uri"
 
+#define OPT_TIMESTAMP                    "opt_timestamp"
+#define OPT_PEROID_SIZE                  "opt_peroid_size"
+#define OPT_PEROID_COUNT                 "opt_peroid_count"
+#define OPT_AUDIO_MUTE                   "opt_mute"
+#define OPT_AUDIO_VOLUME                 "opt_volume"
 
 // common parameters for filter: RKNN with move detection.
 // subnodes of KEY_ROOT_NODE_STREAM_OPTS
@@ -204,12 +223,19 @@ namespace rockit {
 #define OPT_ROCKX_LIB_PATH              "opt_rockx_lib_path"
 #define OPT_ROCKX_SKIP_FRAME            "opt_rockx_skip_frame"
 
+#define OPT_AI_DETECT_RESULT            "opt_ai_detect_result"
+#define OPT_AI_ALGORITHM                "opt_ai_algorithm"
+
+#define OPT_AIMATTING_OUT_RESULT        "aimatting_out_result"
+
+#define OPT_EPTZ_CLIP_RATIO             "opt_clip_ratio"
 #define OPT_EPTZ_CLIP_WIDTH             "opt_clip_width"
 #define OPT_EPTZ_CLIP_HEIGHT            "opt_clip_height"
 
 #define OPT_AUDIO_ALGORITHM             "opt_audio_algorithm"
 
 #define OPT_EXEC_THREAD_NUM             "exec_thread_num"
+
 
 /*
  * AI Server  -- {DBUS | RNDIS} -- Remote HOST(TV AI)
@@ -241,8 +267,8 @@ namespace rockit {
         s.append(s1).append("=").append(s2).append("\n")
 
 #define RT_STRING_LINK_STREAM(s, format, upNodeId, downNodeId)          \
-        s.append(format).append("_").append(std::to_string(upNodeId))   \
-        .append("_").append(std::to_string(downNodeId))
+        s.append(format).append("_").append(util_to_string(upNodeId))   \
+        .append("_").append(util_to_string(downNodeId))
 
 #define RT_NODE_CONFIG_STRING_APPEND(s, key, value) \
         s.append("\"").append(key).append("\"")     \
@@ -250,7 +276,7 @@ namespace rockit {
 
 #define RT_NODE_CONFIG_NUMBER_APPEND(s, key, value) \
         s.append("\"").append(key).append("\"")     \
-        .append(" : ").append(std::to_string(value)).append(",\n")
+        .append(" : ").append(util_to_string(value)).append(",\n")
 
 #define RT_NODE_CONFIG_STRING_LAST_APPEND(s, key, value) \
         s.append("\"").append(key).append("\"")          \
@@ -258,13 +284,13 @@ namespace rockit {
 
 #define RT_NODE_CONFIG_NUMBER_LAST_APPEND(s, key, value) \
         s.append("\"").append(key).append("\"")          \
-        .append(" : ").append(std::to_string(value)).append("\n")
+        .append(" : ").append(util_to_string(value)).append("\n")
 
 #define RT_NODE_TAG_APPEND(s, id) \
-        s.append("\"").append(KEY_ROOT_NODE_ID).append(std::to_string(id)).append("\": {\n")
+        s.append("\"").append(KEY_ROOT_NODE_ID).append(util_to_string(id)).append("\": {\n")
 
 #define RT_PIPE_TAG_APPEND(s, id) \
-        s.append("\"").append(KEY_ROOT_PIPE_ID).append(std::to_string(id)).append("\": {\n")
+        s.append("\"").append(KEY_ROOT_PIPE_ID).append(util_to_string(id)).append("\": {\n")
 
 #define RT_NODE_OPTS_APPEND(s) \
         s.append("\"").append(KEY_ROOT_NODE_OPTS).append("\": {\n")

@@ -125,6 +125,9 @@ class RTTaskNode {
     }
 
     RtMetaData *getOptions() { return mOptions; }
+    RT_RET wakeupNodes();
+
+    RT_RET dump();
 
  public:
     virtual RT_RET open(RTTaskNodeContext *context) = 0;

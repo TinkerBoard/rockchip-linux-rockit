@@ -21,6 +21,7 @@
 #define SRC_RT_MEDIA_AV_FILTER_INCLUDE_RTMEDIAROCKX_H_
 
 #include "rt_type.h"                    // NOLINT
+#include <string>
 
 #ifdef HAVE_ROCKX
 #include <rockx/rockx.h>
@@ -32,7 +33,14 @@
 #define ROCKX_POSE_BODY_V2      "rockx_pose_body_v2"
 #define ROCKX_POSE_FINGER       "rockx_pose_finger"
 #define ROCKX_FACE_GENDER_AGE   "rockx_face_gender_age"
-#define ROCKX_OUT_RESULT        "rockx_out_result"
+
+enum RockxByPassMode {
+    ROCKX_BYPASS_FACEDETECT   = (1 << 0),
+    ROCKX_BYPASS_FACELANDMARK = (1 << 1),
+    ROCKX_BYPASS_POSEBODY     = (1 << 2),
+
+    ROCKX_BYPASS_ALL          = 0xffff,
+};
 
 typedef struct _RTRockxCfg {
     //  path of "librockx.so"
@@ -45,6 +53,8 @@ typedef struct _RTRockxCfg {
     INT32 width;
     //  width of input datas
     INT32 height;
+    //  bypass mode, see RockxByPassMode
+    INT32 bypass;
 
     // add more
 } RTRockxCfg;
@@ -127,6 +137,22 @@ typedef struct {
     RTRknnResult* results;
 } RTRknnAnalysisResults;
 
+typedef struct {
+    INT32 dataSize;
+    INT32 width;
+    INT32 height;
+    INT32 format;
+    INT32 angle;
+    INT32 mirror;
+    INT32 faceID;
+    unsigned char *feature;
+    INT32 featureLen;
+} RTKKMattingFaceInfo;
+
+typedef struct {
+    INT32 faceCount;
+    RTKKMattingFaceInfo *faceInfo;
+} RTKKAIMattingResult;
 
 #endif  // SRC_RT_MEDIA_AV_FILTER_INCLUDE_RTMEDIAROCKX_H_
 

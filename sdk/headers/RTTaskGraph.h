@@ -52,6 +52,7 @@ typedef enum GraphCmd {
 class RTInputStreamManager;
 class RTOutputStreamManager;
 class RTTaskNode;
+class RTGraphInputStream;
 class RTGraphOutputStream;
 class RTExecutor;
 class RTScheduler;
@@ -78,16 +79,26 @@ class RTTaskGraph {
     RT_RET   observeOutputStream(const std::string& streamName,
               INT32 streamId,
               std::function<RT_RET(RTMediaBuffer *)> streamCallback);
+    RT_RET   notifyOutputStreams(RTGraphOutputStream *graphOutputStream);
     RT_RET   cancelObserveOutputStream(INT32 streamId);
 
     RT_RET   addSubGraph(const char *graphConfigFile);
     RT_RET   removeSubGraph(const char *graphConfigFile);
+
+    RT_RET   addDownGraph(RTTaskGraph *graph, std::string downStreamName, INT32 streamId);
+    RT_RET   removeDownGraph(RTTaskGraph *graph, INT32 streamId);
+    RT_RET   addPacketToInputStream(std::string streamName, RTMediaBuffer *packet);
+    RT_RET   setupGraphInputStream(std::string streamName, INT32 downStreamId);
 
     RTTaskNode *createNode(std::string nodeConfig, std::string streamConfig);
     RT_RET   linkNode(RTTaskNode *srcNode, RTTaskNode *dstNode);
     RT_RET   linkNode(INT32 srcNodeId, INT32 dstNodeId);
     RT_RET   unlinkNode(RTTaskNode *srcNode, RTTaskNode *dstNode);
     RT_RET   unlinkNode(INT32 srcNodeId, INT32 dstNodeId);
+    RT_RET   wakeupNodes();
+    RT_RET   selectLinkMode(std::string mode);
+    RT_RET   clearLinkShips();
+    std::vector<std::string> &getLinkMode() { return mLinkModes; }
 
     template <class T, class... Args>
     RT_RET   linkMultiNode(T src, T dst, Args... rest) {
@@ -105,6 +116,26 @@ class RTTaskGraph {
         return RT_OK;
     }
 
+    template <class T, class... Args>
+    RT_RET selectMultiMode(T arg1, T arg2, Args... rest) {
+        RT_RET ret = selectLinkMode(arg1);
+        if (ret != RT_OK) {
+            RT_LOGE("select mode %s failed", arg1);
+        } else {
+            selectMultiMode(arg2, rest...);
+        }
+        return ret;
+    }
+
+    template <class T>
+    RT_RET selectMultiMode(T end) {
+        RT_RET ret = selectLinkMode(end);
+        if (ret != RT_OK) {
+            RT_LOGE("select mode %s failed", end);
+        }
+        return ret;
+    }
+
  private:
     RT_RET prepare();
     RT_RET autoLinkSource();
@@ -113,8 +144,10 @@ class RTTaskGraph {
     RT_RET buildTaskNode(INT32 pipeId, INT32 nodeId, RTGraphParser* nodeParser);
     RT_RET buildExecutors(RTGraphParser *parser);
     RT_RET buildNodes(RTGraphParser *parser);
+    RT_RET buildLinkModes(RTGraphParser *parser);
     RT_RET buildSubGraph(RTGraphParser *graphParser);
     RTTaskNode *createNodeByText(const char *graphConfig);
+    std::vector<std::vector<INT32>> parseLinkShip(std::string linkShip);
 
  protected:
     std::string     mTagName;
@@ -130,6 +163,9 @@ class RTTaskGraph {
     std::map<INT32/* node id */, RTOutputStreamManager *> mOutputManagers;
     // The graph output streams.
     std::map<INT32, RTGraphOutputStream *>                mGraphOutputStreams;
+    std::map<std::string, RTGraphInputStream *>           mGraphInputStreams;
+    std::map<std::string, std::string>                    mLinkShips;
+    std::vector<std::string>                              mLinkModes;
 };
 
 #endif  // SRC_RT_TASK_APP_GRAPH_RTTASKGRAPH_H_

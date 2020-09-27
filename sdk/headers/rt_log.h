@@ -30,6 +30,8 @@
 #define LOG_FLAG_ON   1
 #define LOG_FLAG_OFF  0
 
+#define LOG_FLAG 0
+
 //! super macro.
 #define RT_LOGD_IF(condition, format, ...) if (condition > 0) LOG_TRACE(format, ##__VA_ARGS__)
 #define RT_LOGE_IF(condition, format, ...) if (condition > 0) LOG_ERROR(format, ##__VA_ARGS__)
@@ -47,18 +49,18 @@
 
 //! log function marcro.
 // external api
-#define RT_LOG_API_ENTER()   LOG_TRACE("%s called enter", __FUNCTION__)
-#define RT_LOG_API_LEAVE()   LOG_TRACE("%s called leave", __FUNCTION__)
-#define RT_LOG_API_CALLED()  LOG_TRACE("%s called", __FUNCTION__)
+#define RT_LOG_API_ENTER()   RT_LOGD_IF(LOG_FLAG, "%s called enter", __FUNCTION__)
+#define RT_LOG_API_LEAVE()   RT_LOGD_IF(LOG_FLAG, "%s called leave", __FUNCTION__)
+#define RT_LOG_API_CALLED()  RT_LOGD_IF(LOG_FLAG, "%s called", __FUNCTION__)
 
 // internal func
-#define RT_LOG_FUNC_ENTER()  LOG_TRACE("%s enter", __FUNCTION__)
-#define RT_LOG_FUNC_LEAVE()  LOG_TRACE("%s leave", __FUNCTION__)
-#define RT_LOG_FUNC_CALLED() LOG_TRACE("%s called", __FUNCTION__)
+#define RT_LOG_FUNC_ENTER()  RT_LOGD_IF(LOG_FLAG, "%s enter", __FUNCTION__)
+#define RT_LOG_FUNC_LEAVE()  RT_LOGD_IF(LOG_FLAG, "%s leave", __FUNCTION__)
+#define RT_LOG_FUNC_CALLED() RT_LOGD_IF(LOG_FLAG, "%s called", __FUNCTION__)
 
 // construct/destruct
-#define RT_LOG_CONSTRUCT_IN(thiz)  LOG_TRACE("%s(%p) construct", __FUNCTION__, thiz)
-#define RT_LOG_DESTRUCT_DONE(thiz) LOG_TRACE("%s(%p) destructor ok", __FUNCTION__, thiz)
+#define RT_LOG_CONSTRUCT_IN(thiz)  RT_LOGD_IF(LOG_FLAG, "%s(%p) construct", __FUNCTION__, thiz)
+#define RT_LOG_DESTRUCT_DONE(thiz) RT_LOGD_IF(LOG_FLAG, "%s(%p) destructor ok", __FUNCTION__, thiz)
 
 
 #ifdef __cplusplus

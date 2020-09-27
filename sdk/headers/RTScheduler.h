@@ -144,6 +144,7 @@ class RTScheduler {
     //   and Mutex's TryLock is not guaranteed to work.
     bool mHandlingIdle = false;
     std::vector<RTTaskNode *> mOpendNodeQueue;
+    std::vector<RTTaskNode *> mActiveSourceNodes;
     // Data accessed by all SchedulerQueues.
     RTSchedulerShared mShared;
     RTTaskGraph *mTaskGraph;
