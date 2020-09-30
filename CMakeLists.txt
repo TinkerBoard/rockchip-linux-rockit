@@ -10,8 +10,8 @@ else()
     set(AI_CAMERA_CONF ${ROCKIT_FILE_CONFIGS}/aicamera_rockx.json)
 endif()
 
-install(FILES ${AI_CAMERA_CONF} DESTINATION share/aiserver/  RENAME  "aicamera.json")
-install(FILES ${ROCKIT_FILE_CONFIGS}/aisingle.json DESTINATION share/aiserver/)
+install(FILES ${AI_CAMERA_CONF} DESTINATION ../../oem/usr/share/aiserver/  RENAME  "aicamera.json")
+install(FILES ${ROCKIT_FILE_CONFIGS}/aisingle.json DESTINATION ../../oem/usr/share/aiserver/)
 install(FILES ${ROCKIT_FILE_LIBS} DESTINATION "lib")
 install(DIRECTORY ${ROCKIT_FILE_HEADERS}/ DESTINATION "include/rockit")
 
