@@ -55,19 +55,14 @@ typedef struct _RTAIDetectResults {
     char describe[RT_AI_MAX_LEN];
 
     /*
-     * the type of privete data
-     */
-    INT32 type;
-
-    /*
-     * the sizeof of privete data
+     * the sizeof of private data
      */
     INT32 privSize;
 
     /*
-     * the point of privete data
+     * the point of private data
      */
-    void  *privData;
+    void *privData;
 } RTAIDetectResults;
 
 /*
@@ -79,7 +74,7 @@ RTAIDetectResults* createAIDetectResults();
  * destory an ai detect struct
  * the user must release the privData by themself
  */
-void destroyAIDetectResults(RTAIDetectResults* result);
+void  destroyAIDetectResults(RTAIDetectResults* result);
 
 void* getAIDetectResults(RTMediaBuffer* buffer);
 

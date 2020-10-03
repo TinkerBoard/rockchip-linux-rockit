@@ -269,7 +269,7 @@
                 "stream_mode_in"  : "remain_newest"
             },
             "stream_opts_extra": {
-	        "opt_ai_algorithm": "st_asteria"
+                "opt_ai_algorithm": "st_asteria"
             }
         },
         "node_1001": {

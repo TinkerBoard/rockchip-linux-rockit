@@ -34,13 +34,6 @@
 #define ROCKX_POSE_FINGER       "rockx_pose_finger"
 #define ROCKX_FACE_GENDER_AGE   "rockx_face_gender_age"
 
-enum RockxByPassMode {
-    ROCKX_BYPASS_FACEDETECT   = (1 << 0),
-    ROCKX_BYPASS_FACELANDMARK = (1 << 1),
-    ROCKX_BYPASS_POSEBODY     = (1 << 2),
-
-    ROCKX_BYPASS_ALL          = 0xffff,
-};
 
 typedef struct _RTRockxCfg {
     //  path of "librockx.so"
@@ -53,8 +46,6 @@ typedef struct _RTRockxCfg {
     INT32 width;
     //  width of input datas
     INT32 height;
-    //  bypass mode, see RockxByPassMode
-    INT32 bypass;
 
     // add more
 } RTRockxCfg;
