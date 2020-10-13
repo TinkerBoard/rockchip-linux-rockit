@@ -217,6 +217,7 @@ namespace rockit {
 #define OPT_V4L2_HEIGHT                 "opt_height"
 #define OPT_V4L2_ENTITY_NAME            "opt_entity_name"
 #define OPT_V4L2_QUANTIZATION           "opt_quantiztion"
+#define OPT_V4L2_CAMERA_INDEX           "opt_camera_index"
 
 #define OPT_ROCKX_MODEL                 "opt_rockx_model"
 
