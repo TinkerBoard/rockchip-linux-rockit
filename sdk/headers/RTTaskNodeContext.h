@@ -24,6 +24,7 @@
 
 #include <string>
 #include <vector>
+#include <list>
 #include <memory>
 #include <map>
 
@@ -32,6 +33,7 @@
 #include "RTStreamInfo.h"
 
 class RTMediaBuffer;
+class RTBufferListener;
 class RTOutputStreamShared;
 class RTTaskNodeContext {
  public:
@@ -45,84 +47,58 @@ class RTTaskNodeContext {
     RTTaskNodeContext(const RTTaskNodeContext&) = delete;
     RTTaskNodeContext& operator=(const RTTaskNodeContext&) = delete;
 
-    RT_RET prepareForRun(RtMetaData* options);
-    RT_RET cleanupAfterRun();
+    RT_RET              prepareForRun(RtMetaData* options);
+    RT_RET              cleanupAfterRun();
 
-    const std::string& nodeName() const { return mNodeName; }
-    INT32 nodeId() const { return mNodeId; }
+    const std::string&  nodeName() const { return mNodeName; }
+    INT32               nodeId() const { return mNodeId; }
+    void                suspend() { mSuspend = true; }
+    void                resume() { mSuspend = false; }
+    bool                isSuspend() { return mSuspend; }
+    RtMetaData*         options() { return mOptions; }
+    void                sendInterrupt(std::string reason);
+    void                setOutputBufferListener(RTBufferListener *listener);
+    void                setMaxBatchPrcoessSize(INT32 maxBatchSize);
+    INT32               getMaxBatchPrcoessSize();
 
-    void suspend() { mSuspend = true; }
-    void resume() { mSuspend = false; }
-    bool isSuspend() { return mSuspend; }
+    RTStreamInfo*       getInputInfo();
+    RTStreamInfo*       getInputInfo(std::string streamType);
+    RTStreamInfo*       getOutputInfo();
+    RTStreamInfo*       getOutputInfo(std::string streamType);
 
-    RT_BOOL hasInput(std::string streamType) {
-        return (mInputs.find(streamType) != mInputs.end()) ? RT_TRUE : RT_FALSE;
-    }
+    std::list<RTMediaBuffer *>* outputQueue(std::string streamType = "none");
 
-    INT32 inputsSize(std::string streamType = "none") {
-        RtMutex::RtAutolock autoLock(mInputMutex);
-        if (streamType == "none") {
-            return mInputs.begin()->second.size();
-        } else {
-            return mInputs[streamType].size();
-        }
-    }
-    RTStreamInfo *getInputInfo(std::string streamType);
-    RTStreamInfo *getInputInfo() { return mInputInfos->front(); }
-    RTStreamInfo *getOutputInfo(std::string streamName);
-    RTStreamInfo *getOutputInfo() { return mOutputInfos->front(); }
+    RT_BOOL             hasInputStream(std::string streamType);
+    RT_BOOL             hasOutputStream(std::string streamType);
+    INT32               inputQueueSize(std::string streamType = "none");
+    INT32               outputQueueSize(std::string streamType = "none");
+    RT_BOOL             inputIsEmpty(std::string streamType = "none");
+    RT_BOOL             outputIsEmpty(std::string streamType = "none");
 
-    RTOutputStreamShared *outputs(std::string streamName = "none") {
-        if (mOutputs.size() == 0)
-            return RT_NULL;
-
-        if (streamName == "none") {
-            return mOutputs.begin()->second;
-        } else {
-            return mOutputs[streamName];
-        }
-    }
-    RtMetaData* options() { return mOptions; }
-
-    void setMaxBatchPrcoessSize(INT32 maxBatchSize) {
-        mMaxBatchProcessSize = maxBatchSize;
-    }
-
-    INT32 getMaxBatchPrcoessSize() { return mMaxBatchProcessSize; }
-
-    RTMediaBuffer *dequeInputBuffer(std::string streamType = "none");
-    RTMediaBuffer *inputHeadBuffer(std::string streamType = "none");
-    RT_RET queueInputBuffer(RTMediaBuffer *packet, std::string streamTpye = "none");
-    RTMediaBuffer *dequeOutputBuffer(
-                        RT_BOOL block = RT_TRUE,
-                        UINT32 size = 0,
-                        std::string streamType = "none");
-    RT_RET queueOutputBuffer(RTMediaBuffer *packet, std::string streamType = "none");
-    RT_BOOL inputIsEmpty(std::string streamType = "none");
-    RT_BOOL outputIsEmpty(std::string streamType = "none");
-
-    RT_RET dump();
+    RTMediaBuffer*      inputHeadBuffer(std::string streamType = "none");
+    RTMediaBuffer*      dequeInputBuffer(std::string streamType = "none");
+    RT_RET              queueInputBuffer(RTMediaBuffer *packet, std::string streamTpye = "none");
+    RTMediaBuffer*      dequeOutputBuffer(RT_BOOL block = RT_TRUE,
+                                           UINT32 size = 0,
+                                           std::string streamType = "none");
+    RT_RET              queueOutputBuffer(RTMediaBuffer *packet, std::string streamType = "none");
+    RT_RET              dump();
 
  private:
-    std::vector<RTMediaBuffer *>& inputs(std::string streamType = "none") {
-        if (streamType == "none") {
-            return mInputs.begin()->second;
-        } else {
-            return mInputs[streamType];
-        }
-    }
+    std::vector<RTMediaBuffer *>&   inputs(std::string streamType = "none");
+    RTOutputStreamShared*           outputs(std::string streamType = "none");
 
  private:
     std::map<std::string, std::vector<RTMediaBuffer *>> mInputs;
-    std::map<std::string, RTOutputStreamShared *> mOutputs;
-    RtMetaData           *mOptions;
-    INT32 mNodeId;
-    std::string mNodeName;
-    bool mSuspend = false;
-    INT32 mMaxBatchProcessSize = 4;
-    std::vector<RTStreamInfo *> *mInputInfos;
-    std::vector<RTStreamInfo *> *mOutputInfos;
-    RtMutex                      mInputMutex;
+    std::map<std::string, RTOutputStreamShared *>       mOutputs;
+    RtMetaData                     *mOptions;
+    INT32                           mNodeId;
+    std::string                     mNodeName;
+    bool                            mSuspend = false;
+    INT32                           mMaxBatchProcessSize = 4;
+    std::vector<RTStreamInfo *>    *mInputInfos;
+    std::vector<RTStreamInfo *>    *mOutputInfos;
+    RtMutex                         mInputMutex;
 };
 
 #endif  // SRC_RT_TASK_TASK_GRAPH_RTTASKNODECONTEXT_H_

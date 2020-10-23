@@ -44,7 +44,7 @@
 typedef enum _RT_EPTZ_MODE {
     RT_EPTZ_PAN  = 0,
     RT_EPTZ_TILT = 1,
-    RT_EPTZ_ROLL = 2,  //no support now
+    RT_EPTZ_ROLL = 2,  // no support now
     RT_EPTZ_AUTO = 3,
 } RT_EPTZ_MODE;
 
