@@ -63,12 +63,13 @@ class RTTaskGraph {
  public:
     explicit RTTaskGraph(const char* tagName);
     virtual ~RTTaskGraph();
+
  public:
     // external common api
     RT_RET      autoBuild(const char* configFile);
-    RT_RET      prepare();
+    RT_RET      prepare(RtMetaData *params = RT_NULL);
     RT_RET      start();
-    RT_RET      stop();
+    RT_RET      stop(RT_BOOL block = RT_TRUE);
     RT_RET      resume();
     RT_RET      pause();
     RT_RET      flush();
@@ -81,6 +82,7 @@ class RTTaskGraph {
     RT_RET      waitForObservedOutput();
     RT_RET      waitUntilDone();
     RT_RET      dump();
+
  public:
     // external link graph api
     RT_RET      addSubGraph(const char *graphConfigFile);
@@ -88,6 +90,7 @@ class RTTaskGraph {
     RT_RET      addDownGraph(RTTaskGraph *graph, std::string downStreamName, INT32 streamId);
     RT_RET      removeDownGraph(RTTaskGraph *graph, INT32 streamId);
     RT_RET      setupGraphInputStream(std::string streamName, INT32 downStreamId);
+
  public:
     // external link node api
     RTTaskNode* createNode(std::string nodeConfig, std::string streamConfig);
@@ -98,15 +101,18 @@ class RTTaskGraph {
     }
     RT_RET      unlinkNode(RTTaskNode *srcNode, RTTaskNode *dstNode);
 
+    RT_BOOL     hasLinkMode(std::string mode);
     RT_RET      selectLinkMode(std::string mode);
     template <class T, class... Args>
     RT_RET      selectLinkMode(T arg1, T arg2, Args... rest) {
         return selectMultiMode(arg1, arg2, rest...);
     }
     RT_RET      clearLinkShips();
+
  public:
     // internal api
     void        sendInterrupt(std::string reason);
+
  private:
     template <class T, class... Args>
     RT_RET      linkMultiNode(T src, T dst, Args... rest) {
@@ -143,6 +149,7 @@ class RTTaskGraph {
         }
         return ret;
     }
+
  private:
     RT_RET      autoLinkSource();
     RT_RET      autoUnlinkSource(INT32 nodeId);

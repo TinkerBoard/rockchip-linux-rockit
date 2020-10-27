@@ -103,6 +103,7 @@ class RTUVCGraph {
     std::function<RT_RET(RTMediaBuffer *)> mNNCallback;
     std::function<RT_RET(RTMediaBuffer *)> mUVCCallback;
     std::function<RT_RET(RTMediaBuffer *)> mMattingCallback;
+    std::map<std::string, RT_BOOL>         mVendorDetections;
 };
 
 #endif  // SRC_RT_TASK_APP_GRAPH_RTUVCGRAPH_H_

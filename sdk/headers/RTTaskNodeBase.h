@@ -60,6 +60,7 @@ class RTTaskNodeBase {
     RtMetaData*         getOptions() { return mOptions; }
     RT_BOOL             isSource() const;
     RT_BOOL             isSink() const;
+    RT_BOOL             hasMirror() const;
     INT32               numInputStreams() const;
     INT32               numOutputStreams() const;
 

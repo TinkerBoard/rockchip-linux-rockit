@@ -282,41 +282,6 @@
                 "stream_fmt_out"  : "nn:stream_ai"
             }
         },
-        "node_64": {
-            "node_opts": {
-                "node_name"       : "ai_matting"
-            },
-            "node_opts_extra": {
-                "node_buff_type"  : 0,
-                "node_buff_count" : 16,
-                "node_buff_size"  : 102400
-            },
-            "stream_opts": {
-                "stream_input"    : "ai_matting_in",
-                "stream_output"   : "aimatting_out",
-                "stream_fmt_in"   : "nn:stream_ai",
-                "stream_fmt_out"  : "image:nv12",
-                "stream_mode_in"  : "remain_newest"
-            },
-            "stream_opts_extra": {
-                "opt_ai_algorithm": "rockx"
-            }
-        },
-        "node_1001": {
-            "node_opts": {
-                "node_name"       : "link_output"
-            },
-            "node_opts_extra": {
-                "node_buff_type"  : 1,
-                "node_buff_count" : 0
-            },
-            "stream_opts": {
-                "stream_input"    : "aimatting_link_in",
-                "stream_output"   : "aimatting_link_out",
-                "stream_fmt_in"   : "image:nv12",
-                "stream_fmt_out"  : "image:nv12"
-            }
-        },
         "node_21": {
             "node_opts": {
                 "node_name"       : "rkrga"
@@ -349,10 +314,6 @@
         "link_2": {
             "link_name"          : "nn_linkout",
             "link_ship"          : "10,8-8,11,1000-8,12,1000-8,13,1000"
-        },
-        "link_3": {
-            "link_name"          : "aimatting",
-            "link_ship"          : "11,64,1001"
         },
         "link_4": {
             "link_name"          : "uvc_zoom",

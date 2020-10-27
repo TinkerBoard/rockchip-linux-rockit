@@ -182,6 +182,9 @@ namespace rockit {
 #define OPT_PEROID_COUNT                 "opt_peroid_count"
 #define OPT_AUDIO_MUTE                   "opt_mute"
 #define OPT_AUDIO_VOLUME                 "opt_volume"
+#define OPT_AUDIO_START_DELAY            "opt_start_delay"
+#define OPT_AUDIO_STOP_DELAY             "opt_stop_delay"
+
 
 // common parameters for filter: RKNN with move detection.
 // subnodes of KEY_ROOT_NODE_STREAM_OPTS

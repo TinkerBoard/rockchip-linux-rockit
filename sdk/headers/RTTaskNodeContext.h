@@ -13,10 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * src author: <mediapipe-team@google.com>
- * new author: modified by <rimon.xu@rock-chips.com>
- *       date: 2020-03-23
- *  reference: https://github.com/google/mediapipe
  */
 
 #ifndef SRC_RT_TASK_TASK_GRAPH_RTTASKNODECONTEXT_H_
@@ -61,15 +57,13 @@ class RTTaskNodeContext {
     void                setMaxBatchPrcoessSize(INT32 maxBatchSize);
     INT32               getMaxBatchPrcoessSize();
 
-    RTStreamInfo*       getInputInfo();
-    RTStreamInfo*       getInputInfo(std::string streamType);
-    RTStreamInfo*       getOutputInfo();
-    RTStreamInfo*       getOutputInfo(std::string streamType);
+    RTStreamInfo*       getInputInfo(std::string streamType = "none");
+    RTStreamInfo*       getOutputInfo(std::string streamType = "none");
 
     std::list<RTMediaBuffer *>* outputQueue(std::string streamType = "none");
 
-    RT_BOOL             hasInputStream(std::string streamType);
-    RT_BOOL             hasOutputStream(std::string streamType);
+    RT_BOOL             hasInputStream(std::string streamType = "none");
+    RT_BOOL             hasOutputStream(std::string streamType = "none");
     INT32               inputQueueSize(std::string streamType = "none");
     INT32               outputQueueSize(std::string streamType = "none");
     RT_BOOL             inputIsEmpty(std::string streamType = "none");
@@ -85,7 +79,7 @@ class RTTaskNodeContext {
     RT_RET              dump();
 
  private:
-    std::vector<RTMediaBuffer *>&   inputs(std::string streamType = "none");
+    std::vector<RTMediaBuffer *>*   inputs(std::string streamType = "none");
     RTOutputStreamShared*           outputs(std::string streamType = "none");
 
  private:
