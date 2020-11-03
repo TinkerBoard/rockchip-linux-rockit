@@ -23,26 +23,26 @@
 #include "rt_header.h"   // NOLINT
 #include <string.h>      // NOLINT
 
-#define RT_GET_ENV_U32(name, value, default_value) \
-        rt_get_env_u32(name, value, default_value)
+#define RT_ENV_GET_U32(name, value, default_value) \
+        rt_env_get_u32(name, value, default_value)
 
-#define RT_GET_ENV_STR(name, value, default_value) \
-        rt_get_env_str(name, value, default_value)
+#define RT_ENV_GET_STR(name, value, default_value) \
+        rt_env_get_str(name, value, default_value)
 
-#define RT_SET_ENV_U32(name, value) \
-        rt_set_env_u32(name, value)
+#define RT_ENV_SET_U32(name, value) \
+        rt_env_set_u32(name, value)
 
-#define RT_SET_ENV_STR(name, value) \
-        rt_set_env_str(name, value)
+#define RT_ENV_SET_STR(name, value) \
+        rt_env_set_str(name, value)
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-INT32 rt_get_env_u32(const char *name, UINT32 *value, UINT32 default_value);
-INT32 rt_get_env_str(const char *name, const char **value, const char *default_value);
-INT32 rt_set_env_u32(const char *name, UINT32 value);
-INT32 rt_set_env_str(const char *name, char *value);
+INT32 rt_env_get_u32(const char *name, UINT32 *value, UINT32 default_value);
+INT32 rt_env_get_str(const char *name, const char **value, const char *default_value);
+INT32 rt_env_set_u32(const char *name, UINT32 value);
+INT32 rt_env_set_str(const char *name, char *value);
 
 #ifdef __cplusplus
 }

@@ -27,13 +27,6 @@ class RTUACGraph : public RTTaskGraph {
  public:
     explicit RTUACGraph(const char* tagName);
     virtual ~RTUACGraph();
-
-    RT_RET prepare();
-    RT_RET start();
-    RT_RET stop();
-
- private:
-    RT_RET deinitialize();
 };
 
 #endif  // SRC_RT_TASK_APP_GRAPH_RTUACGRAPH_H_
