@@ -55,6 +55,7 @@ typedef enum _RTStubUid {
     kStubfilterSKVAec     = MKTAG('f', 's', 'a', 'e'),
     kStubFilterSKVAgc     = MKTAG('f', 'a', 'g', 'c'),
     kStubFilterSKVBF      = MKTAG('f', 's', 'b', 'f'),
+    kStubFilterSKVDoa     = MKTAG('f', 's', 'd', 'a'),
 
     /* node stubs for media device */
     kStubDeviceV4L2       = MKTAG('d', 'v', 'l', 'v'),
