@@ -181,6 +181,7 @@ namespace rockit {
 #define OPT_AUDIO_AEC_NLP_PLUS_URI       "opt_aec_nlp_plus_uri"
 
 #define OPT_TIMESTAMP                    "opt_timestamp"
+#define OPT_PTS                          "opt_pts"
 #define OPT_PEROID_SIZE                  "opt_peroid_size"
 #define OPT_PEROID_COUNT                 "opt_peroid_count"
 #define OPT_AUDIO_MUTE                   "opt_mute"

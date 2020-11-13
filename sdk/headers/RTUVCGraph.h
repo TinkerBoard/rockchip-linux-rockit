@@ -62,6 +62,7 @@ class RTUVCGraph {
     RT_RET observeMattingOutputStream(std::function<RT_RET(RTMediaBuffer *)> streamCallback);
     RT_RET updateCameraParams(RtMetaData *params);
     RT_RET updateEncoderParams(RtMetaData *params);
+    RT_RET updateNNParams(RtMetaData *params);
     RT_RET setCameraParams();
 
     RT_RET enableEPTZ(RT_BOOL enableEPTZ);

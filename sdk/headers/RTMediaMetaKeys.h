@@ -99,6 +99,7 @@ enum {
     kKeyFrameError       = MKTAG('f', 'e', 'r', 'r'),   // INT32 Frame Error
     kKeyDisplayW         = MKTAG('d', 'w', 'i', 'd'),   // INT32
     kKeyDisplayH         = MKTAG('d', 'h', 'e', 'i'),   // INT32
+    kKeyFrameColorFormat = MKTAG('f', 'c', 'f', 'm'),   // INT32
 
     /* RTPacket */
     kKeyPacketPtr        = MKTAG('a', 'v', 'p', 't'),   // AVPacket
@@ -169,6 +170,36 @@ enum {
 
     /* setting command */
     kKeySettingQueryCmd        = MKTAG('s', 'q', 'u', 'y'),
+
+    /* meta data retriever*/
+    kRetrieverKey              = MKTAG('r', 'k', 'e', 'y'),
+    kRetrieverFrameAtTime      = MKTAG('r', 'f', 'a', 't'),
+    kRetrieverFrameOption      = MKTAG('r', 'f', 'f', 'o'),
+    kRetrieverDstColorFormat   = MKTAG('r', 'd', 'c', 'f'),
+    kRetrieverFrameMetaOnly    = MKTAG('r', 'f', 'm', 'o'),
+    kRetrieverFrameNumber      = MKTAG('r', 'f', 'n', 'u'),
+    kRetrieverReadMaxTime      = MKTAG('r', 'r', 'm', 't'),
+    kRetrieverAlbumArtData     = MKTAG('r', 'a', 'a', 'd'),
+    kRetrieverAlbumArtDataSize = MKTAG('r', 'a', 'a', 's'),
+    kRetrieverCallbackContext  = MKTAG('r', 'c', 'b', 'c'),
+    kRetrieverBufferAddress    = MKTAG('r', 'b', 'a', 'r'),
+
+    kRetrieverKeyMIMEType      = MKTAG('r', 'm', 'i', 't'),
+    kRetrieverKeyCDTrackNumber = MKTAG('r', 'c', 't', 'n'),
+    kRetrieverKeyDiscNumber    = MKTAG('r', 'd', 'i', 'n'),
+    kRetrieverKeyAlbum         = MKTAG('r', 'a', 'l', 'b'),
+    kRetrieverKeyArtist        = MKTAG('r', 'a', 'r', 't'),
+    kRetrieverKeyAlbumArtist   = MKTAG('r', 'a', 'a', 't'),
+    kRetrieverKeyAuthor        = MKTAG('r', 'a', 'u', 't'),
+    kRetrieverKeyComposer      = MKTAG('r', 'c', 'o', 'm'),
+    kRetrieverKeyDate          = MKTAG('r', 'd', 'a', 't'),
+    kRetrieverKeyGenre         = MKTAG('r', 'g', 'e', 'n'),
+    kRetrieverKeyTitle         = MKTAG('r', 't', 'i', 't'),
+    kRetrieverKeyYear          = MKTAG('r', 'y', 'e', 'r'),
+    kRetrieverKeyWriter        = MKTAG('r', 'w', 'r', 'i'),
+    kRetrieverKeyCompilation   = MKTAG('r', 'c', 'p', 'l'),
+    kRetrieverKeyLocation      = MKTAG('r', 'l', 'o', 'c'),
+    kRetrieverKeyDuration      = MKTAG('r', 'd', 'u', 'r'),
 
     /* for new pipeline */
     kKeyPipeInvokeCmd          = MKTAG('p', 'c', 'm', 'd'),    // const char *

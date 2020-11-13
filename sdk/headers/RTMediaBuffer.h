@@ -99,6 +99,7 @@ class RTMediaBuffer : public RTObject {
     INT32  getHandle() const;
     UINT32 getPhyAddr() const;
     INT32  getUniqueID();
+    INT32  getPoolID();
 
     void   setData(void* data, UINT32 size);
     void   setListener(RTBufferListener* listener);
@@ -113,6 +114,7 @@ class RTMediaBuffer : public RTObject {
     void   setHandle(INT32 handle);
     void   setAllocator(RTAllocator *allocator);
     void   setUniqueID(INT32 uniqueId);
+    void   setPoolID(INT32 poolId);
 
     RTAllocator *       getAllocator() { return mAllocator; }
     void*               getPrivateData();
@@ -161,6 +163,7 @@ class RTMediaBuffer : public RTObject {
     void           *mBufferID;
     RT_BOOL         mRegistered;
     RtMutex        *mLock;
+    INT32           mPoolID;
 
     RtMediaBufferStatus     mStatus;
     RTMediaBufferSite       mSite;

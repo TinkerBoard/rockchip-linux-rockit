@@ -271,6 +271,12 @@ typedef enum _RTVideoRCMode {
     RT_RC_MODE_BUTT,
 } RTVideoRCMode;
 
+typedef enum _RTSeekMode {
+    RT_SEEK_UNSPECIFIED = -1,
+    RT_SEEK_PREVIOUS_SYNC,
+    RT_SEEK_NEXT_SYNC,
+} RTSeekMode;
+
 typedef enum _RTVideoHDLevel {
     RT_VIDEO_HDL_SD = 0,  // <=  576P
     RT_VIDEO_HDL_HD,      // <=  720P
@@ -356,6 +362,15 @@ typedef struct _RTTrackParam {
     INT32  mTimeBaseDen;
     INT64  mStartTime;
 } RTTrackParam;
+
+typedef enum _ResVideoIdx {
+    RES_VIDEO_ROTATION = 0,
+} ResVideoIdx;
+
+typedef enum _ResAudioIdx {
+    RES_AUDIO_BITRATE = 0,
+    RES_AUDIO_BIT_PER_SAMPLE = 1,
+} ResAudioIdx;
 
 typedef struct _RTTrackInfor {
     RTTrackType mCodecType;
