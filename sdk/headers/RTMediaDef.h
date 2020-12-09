@@ -96,6 +96,8 @@ typedef enum {
 
      RT_AUDIO_ID_Unused = 0x40000000,  /**< Placeholder value when coding is N/A  */
      RT_AUDIO_ID_AutoDetect,  /**< auto detection of audio format */
+     RT_AUDIO_ID_PCM_ALAW,    /** <g711a> */
+     RT_AUDIO_ID_PCM_MULAW,   /** <g711u> */
      RT_AUDIO_ID_PCM_S16LE,   /**< Any variant of PCM_S16LE coding */
      RT_AUDIO_ID_PCM_S24LE,   /**< Any variant of PCM_S24LE coding */
      RT_AUDIO_ID_PCM_S32LE,   /**< Any variant of PCM_S32LE coding */
@@ -307,6 +309,22 @@ typedef enum _RTAudioFormat {
     RT_AUDIO_FMT_IEC61937,
     RT_AUDIO_FMT_MAX,
 } RTAudioFormat;
+
+typedef enum _RTAdecMode {
+    /*
+     * require input is valid dec pack(a complete frame encode result),
+     * e.g.the stream get from AENC is a valid dec pack, the stream know
+     * actually pack len from file is also a dec pack.
+     * this mode is high-performative*/
+    RT_CODEC_MODE_PACK = 0,
+    /*
+     * input is stream,low-performative, if you couldn't find out whether
+     * a stream is vaild dec pack,you could use this mode
+     */
+    RT_CODEC_MODE_STREAM,
+
+    RT_CODEC_MODE_BUTT,
+} RTAdecMode;
 
 typedef enum _RTClockType {
     RT_CLOCK_NONE = -1,

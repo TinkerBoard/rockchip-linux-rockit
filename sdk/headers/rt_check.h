@@ -31,12 +31,28 @@
         } \
     } while (0)
 
+#define RET_CHECK_OP(name, op, actual, exp) \
+            do { \
+                if (actual op exp) { \
+                    /* TODO */ \
+                } else { \
+                    return RT_ERR_UNKNOWN; \
+                } \
+            } while (0)
+
 #define CHECK_EQ(actual, exp) CHECK_OP("CHECK_EQ", ==, actual, exp)
 #define CHECK_UE(actual, exp) CHECK_OP("CHECK_UE", !=, actual, exp)
 #define CHECK_LE(actual, exp) CHECK_OP("CHECK_LE", <=, actual, exp)
 #define CHECK_LT(actual, exp) CHECK_OP("CHECK_LT", < , actual, exp)
 #define CHECK_GE(actual, exp) CHECK_OP("CHECK_GE", >=, actual, exp)
 #define CHECK_GT(actual, exp) CHECK_OP("CHECK_GT", > , actual, exp)
+
+#define RET_CHECK_EQ(actual, exp) RET_CHECK_OP("CHECK_EQ", ==, actual, exp)
+#define RET_CHECK_UE(actual, exp) RET_CHECK_OP("CHECK_UE", !=, actual, exp)
+#define RET_CHECK_LE(actual, exp) RET_CHECK_OP("CHECK_LE", <=, actual, exp)
+#define RET_CHECK_LT(actual, exp) RET_CHECK_OP("CHECK_LT", < , actual, exp)
+#define RET_CHECK_GE(actual, exp) RET_CHECK_OP("CHECK_GE", >=, actual, exp)
+#define RET_CHECK_GT(actual, exp) RET_CHECK_OP("CHECK_GT", > , actual, exp)
 
 #define FUNC_CHECK(ret) CHECK_OP("FUNC_CHECK", ==, ret, RT_OK)
 

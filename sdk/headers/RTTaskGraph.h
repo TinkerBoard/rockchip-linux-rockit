@@ -46,8 +46,21 @@ typedef enum GraphCmd {
     GRAPH_CMD_PRIVATE_CMD,
     // for task node command
     GRAPH_CMD_TASK_NODE_PRIVATE_CMD,
+    GRAPH_CMD_QUERY_STAT,
     GRAPH_CMD_MAX,
 } RTGraphCmd;
+
+typedef enum GraphIOStreamMode {
+    // Blocks and waits until none of the affected streams
+    // are full. Note that if max_queue_size is set to -1, the packet will be
+    // added regardless of queue size.
+    WAIT_TILL_NOT_FULL,
+    // Returns and does not add packet if any affected input
+    // stream is full.
+    ADD_IF_NOT_FULL,
+    // drop packet when streams are full
+    DROP_IF_FULL,
+} RTGraphIOStreamMode;
 
 class RTInputStreamManager;
 class RTOutputStreamManager;
@@ -66,7 +79,7 @@ class RTTaskGraph {
 
  public:
     // external common api
-    RT_RET      autoBuild(const char* configFile);
+    RT_RET      autoBuild(const char* config, RT_BOOL isFileType = RT_TRUE);
     RT_RET      prepare(RtMetaData *params = RT_NULL);
     RT_RET      start();
     RT_RET      stop(RT_BOOL block = RT_TRUE);
@@ -79,8 +92,8 @@ class RTTaskGraph {
                  INT32 streamId,
                  std::function<RT_RET(RTMediaBuffer *)> streamCallback);
     RT_RET      cancelObserveOutputStream(INT32 streamId);
-    RT_RET      waitForObservedOutput();
-    RT_RET      waitUntilDone();
+    RT_RET      waitForObservedOutput(INT64 timeoutUs = -1);
+    RT_RET      waitUntilDone(INT64 timeoutUs = -1);
     RT_RET      dump();
 
  public:
@@ -90,6 +103,7 @@ class RTTaskGraph {
     RT_RET      addDownGraph(RTTaskGraph *graph, std::string downStreamName, INT32 streamId);
     RT_RET      removeDownGraph(RTTaskGraph *graph, INT32 streamId);
     RT_RET      setupGraphInputStream(std::string streamName, INT32 downStreamId);
+    RT_RET      setGraphOutputStreamAddMode(RTGraphIOStreamMode mode);
 
  public:
     // external link node api
@@ -112,6 +126,12 @@ class RTTaskGraph {
  public:
     // internal api
     void        sendInterrupt(std::string reason);
+    RT_BOOL     unthrottleSources();
+
+ protected:
+    RT_RET      addPacketToInputStream(std::string streamName, INT64 timeoutUs, RTMediaBuffer *packet);
+    RT_RET      addOutputStreamPoller(const std::string streamName);
+    RT_RET      removeOutputStreamPoller(const std::string streamName);
 
  private:
     template <class T, class... Args>
@@ -162,7 +182,6 @@ class RTTaskGraph {
     RT_RET      buildNodes(RTGraphParser *parser);
     RT_RET      buildLinkModes(RTGraphParser *parser);
     RT_RET      buildSubGraph(RTGraphParser *graphParser);
-    RT_RET      addPacketToInputStream(std::string streamName, RTMediaBuffer *packet);
     RT_RET      notifyOutputStreams(RTGraphOutputStream *graphOutputStream);
     RTTaskNode *createNodeByText(const char *graphConfig);
     std::vector<std::vector<INT32>> parseLinkShip(std::string linkShip);
@@ -175,15 +194,17 @@ class RTTaskGraph {
     RtMutex         mFullInputStreamsMutex;
     RtMutex         mErrorMutex;
     RTScheduler    *mScheduler;
-
+    RtMutex        *mLock;
     std::map<INT32, RTExecutor *>                         mExecutors;
     std::map<INT32/* node id */, RTTaskNode *>            mNodes;
-    std::map<INT32, RTInputStreamManager *>               mFullInputStreams;
+    std::map<INT32, std::vector<RTInputStreamManager *>>  mFullInputStreams;
     std::map<INT32/* node id */, RTInputStreamManager *>  mInputManagers;
     std::map<INT32/* node id */, RTOutputStreamManager *> mOutputManagers;
     // The graph output streams.
     std::map<INT32, RTGraphOutputStream *>                mGraphOutputStreams;
     std::map<std::string, RTGraphInputStream *>           mGraphInputStreams;
+    // Maps graph input streams to their virtual node ids.
+    std::map<std::string, INT32>                          mGraphInputStreamNodeIds;
     std::map<std::string, std::string>                    mLinkShips;
     std::vector<std::string>                              mLinkModes;
 };

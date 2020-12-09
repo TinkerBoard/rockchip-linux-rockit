@@ -97,6 +97,7 @@ enum {
     kKeyFrameEOS         = MKTAG('p', 'e', 'o', 's'),   // INT32 EOS
     kKeyFrameDuration    = MKTAG('d', 'u', 'r', 't'),   // INT32
     kKeyFrameError       = MKTAG('f', 'e', 'r', 'r'),   // INT32 Frame Error
+    kKeyFrameSequence    = MKTAG('f', 's', 'e', 'q'),   // INT32 Frame Sequence
     kKeyDisplayW         = MKTAG('d', 'w', 'i', 'd'),   // INT32
     kKeyDisplayH         = MKTAG('d', 'h', 'e', 'i'),   // INT32
     kKeyFrameColorFormat = MKTAG('f', 'c', 'f', 'm'),   // INT32

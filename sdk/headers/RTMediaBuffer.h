@@ -112,9 +112,9 @@ class RTMediaBuffer : public RTObject {
     void   setBufferID(void *id);
     void   setFd(INT32 fd);
     void   setHandle(INT32 handle);
-    void   setAllocator(RTAllocator *allocator);
     void   setUniqueID(INT32 uniqueId);
     void   setPoolID(INT32 poolId);
+    void   setAllocator(RTAllocator *allocator);
 
     RTAllocator *       getAllocator() { return mAllocator; }
     void*               getPrivateData();
@@ -128,23 +128,21 @@ class RTMediaBuffer : public RTObject {
     RTMediaBufferSite   getSite();
     void*               getBufferID();
 
-    void    registerForHW();
-    RT_BOOL isRegistered();
+    void                registerForHW();
+    RT_BOOL             isRegistered();
 
-    RT_BOOL isEOS(INT32 id);
-    RT_BOOL isEOS();
+    RT_BOOL             isEOS(INT32 id);
+    RT_BOOL             isEOS();
     // refs manage
-    void    addRefs();
-    INT32   refsCount();
+    void                addRefs();
+    INT32               refsCount();
 
     // Clears meta data and resets the range to the full extent.
-    void    reset();
-
- protected:
-    void decRefs();
+    void                reset();
 
  private:
-    void    baseInit();
+    void                baseInit();
+    void                decRefs();
 
  private:
     void*           mData;
@@ -155,21 +153,21 @@ class RTMediaBuffer : public RTObject {
     INT32           mHandle;
     INT32           mFd;
     INT32           mUniqueId;    // all process can using this id
+    INT32           mPoolID;
     UINT32          mPhyAddr;
     RT_BOOL         mOwnsData;
-    RTAllocator    *mAllocator;
     INT32           mRefCount;
     void           *mPrivateData;
     void           *mBufferID;
     RT_BOOL         mRegistered;
+    RTAllocator    *mAllocator;
     RtMutex        *mLock;
-    INT32           mPoolID;
 
     RtMediaBufferStatus     mStatus;
     RTMediaBufferSite       mSite;
     RTBufferListener       *mBufferListener;
-    std::map<INT32, RtMetaData *>   mExtraMetas;
     RtMetaData                     *mMetaData;
+    std::map<INT32, RtMetaData *>   mExtraMetas;
 };
 
 #endif  // SRC_RT_MEDIA_INCLUDE_RTMEDIABUFFER_H_

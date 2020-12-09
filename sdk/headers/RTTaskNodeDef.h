@@ -24,45 +24,49 @@
 #define RT_PADDING 1
 
 typedef enum _RTStubUid {
-    kStubNone             = 0,
+    kStubNone              = 0,
     /* node stubs for media format */
-    kStubDemuxerFFmpeg    = MKTAG('f', 'm', 'p', 'g'),
-    kStubDemuxerFile      = MKTAG('f', 'f', 'i', 'l'),
+    kStubDemuxerFFmpeg     = MKTAG('f', 'm', 'p', 'g'),
+    kStubDemuxerFile       = MKTAG('f', 'f', 'i', 'l'),
 
     /* node stubs for media codec */
-    kStubCodecMppDecoder  = MKTAG('c', 'm', 'd', 'c'),
-    kStubCodecMppEncoder  = MKTAG('c', 'm', 'e', 'e'),
+    kStubCodecMppDecoder     = MKTAG('c', 'm', 'd', 'c'),
+    kStubCodecMppEncoder     = MKTAG('c', 'm', 'e', 'e'),
+    kStubCodecFFAudioDecoder = MKTAG('c', 'a', 'o', 'd'),
 
     /* node stubs for media sink */
-    kStubSinkVideo        = MKTAG('s', 'v', 'i', 'd'),
-    kStubSinkAudio        = MKTAG('s', 'v', 'i', 'l'),
-    kStubSinkFile         = MKTAG('s', 'f', 'i', 'l'),
-    kStubLinkOutput       = MKTAG('l', 'k', 'o', 'p'),
+    kStubSinkVideo         = MKTAG('s', 'v', 'i', 'd'),
+    kStubSinkAudio         = MKTAG('s', 'v', 'i', 'l'),
+    kStubSinkFile          = MKTAG('s', 'f', 'i', 'l'),
+    kStubLinkOutput        = MKTAG('l', 'k', 'o', 'p'),
 
     /* node stubs for media filter */
-    kStubFilterRKRga      = MKTAG('f', 'r', 'g', 'a'),
-    kStubFilterRKNpu      = MKTAG('f', 'n', 'p', 'u'),
-    kStubFilterImage      = MKTAG('f', 'i', 'm', 'g'),
-    kStubFilterScale      = MKTAG('f', 's', 'c', 'a'),
-    kStubFilterRockx      = MKTAG('f', 'r', 'k', 'x'),
-    kStubFilterResample   = MKTAG('f', 'a', 'r', 's'),
-    kStubFilterStAsteria  = MKTAG('f', 's', 'a', 't'),
-    kStubFilterVolume     = MKTAG('f', 'a', 'v', 'l'),
-    kStubFilterEptz       = MKTAG('e', 'p', 't', 'z'),
-    kStubfilterAudio3A    = MKTAG('f', 'a', 'd', 'a'),
-    kStubfilterAnr        = MKTAG('f', 'a', 'n', 'r'),
+    kStubFilterRKRga       = MKTAG('f', 'r', 'g', 'a'),
+    kStubFilterRKNpu       = MKTAG('f', 'n', 'p', 'u'),
+    kStubFilterImage       = MKTAG('f', 'i', 'm', 'g'),
+    kStubFilterScale       = MKTAG('f', 's', 'c', 'a'),
+    kStubFilterRockx       = MKTAG('f', 'r', 'k', 'x'),
+    kStubFilterResample    = MKTAG('f', 'a', 'r', 's'),
+    kStubFilterStAsteria   = MKTAG('f', 's', 'a', 't'),
+    kStubFilterVolume      = MKTAG('f', 'a', 'v', 'l'),
+    kStubFilterEptz        = MKTAG('e', 'p', 't', 'z'),
+    kStubfilterAudio3A     = MKTAG('f', 'a', 'd', 'a'),
+    kStubfilterAnr         = MKTAG('f', 'a', 'n', 'r'),
 
+    kStubfilterSKV        = MKTAG('f', 's', 'k', 'v'),
     kStubfilterSKVAec     = MKTAG('f', 's', 'a', 'e'),
     kStubFilterSKVAgc     = MKTAG('f', 'a', 'g', 'c'),
     kStubFilterSKVBF      = MKTAG('f', 's', 'b', 'f'),
     kStubFilterSKVDoa     = MKTAG('f', 's', 'd', 'a'),
+    kStubFilterTrackMode  = MKTAG('f', 't', 'k', 'm'),
 
     /* node stubs for media device */
-    kStubDeviceV4L2       = MKTAG('d', 'v', 'l', 'v'),
-    kStubDeviceALSACap    = MKTAG('d', 'a', 'l', 'c'),
-    kStubDeviceALSAPlay   = MKTAG('d', 'a', 'l', 'p'),
-    kStubDeviceExternal   = MKTAG('d', 'e', 'x', 't'),
-    kStubFilterAIMatting  = MKTAG('a', 'i', 'm', 't'),
+    kStubDeviceV4L2        = MKTAG('d', 'v', 'l', 'v'),
+    kStubDeviceALSACap     = MKTAG('d', 'a', 'l', 'c'),
+    kStubDeviceALSAPlay    = MKTAG('d', 'a', 'l', 'p'),
+    kStubDeviceMultiCap    = MKTAG('m', 'l', 't', 'c'),
+    kStubDeviceExternal    = MKTAG('d', 'e', 'x', 't'),
+    kStubFilterAIMatting   = MKTAG('a', 'i', 'm', 't'),
 } RTStubUid;
 
 typedef enum _RTPadType {

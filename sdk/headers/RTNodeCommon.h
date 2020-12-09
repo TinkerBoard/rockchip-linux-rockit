@@ -27,8 +27,6 @@
 
 #include "rt_string_utils.h"
 
-namespace rockit {
-
 /*
  * "node_0": {
  *    "node_name":          "source_stream",
@@ -52,12 +50,16 @@ namespace rockit {
 #define NODE_NAME_RESAMPLE      "resample"
 #define NODE_NAME_ALSA_CAPTURE  "alsa_capture"
 #define NODE_NAME_ALSA_PLAYBACK "alsa_playback"
+#define NODE_NAME_MULTI_CAPTURE "multi_cap"
 #define NODE_NAME_ALGORITHM_3A  "alg_3a"
 #define NODE_NAME_ALGORITHM_3A_ANR  "alg_anr"
+#define NODE_NAME_ALGORITHM_SKV     "skv"
 #define NODE_NAME_ALGORITHM_SKV_AEC "skv_aec"
 #define NODE_NAME_ALGORITHM_SKV_AGC "skv_agc"
 #define NODE_NAME_ALGORITHM_SKV_BF  "skv_bf"
 #define NODE_NAME_ALGORITHM_SKV_DOA "skv_doa"
+#define NODE_NAME_AUDIO_TRACK_MODE  "track_mode"
+
 #define NODE_NAME_RKNN          "rknn"
 #define NODE_NAME_FFM_DEMUXER   "ffm_demuxer"
 #define NODE_NAME_VIDEO_SINK    "video_sink"
@@ -66,6 +68,7 @@ namespace rockit {
 #define NODE_NAME_VOLUME        "filter_volume"
 #define NODE_NAME_LINK_OUTPUT   "link_output"
 #define NODE_NAME_SOURCE_EXTERNAL  "external_source"
+#define NODE_NAME_AUDIO_DEC_FFMPEG  "audio_dec_ffmpeg"
 
 #define NODE_PORT_SOURCE  "source"
 #define NODE_PORT_DEVICE  "device"
@@ -82,6 +85,7 @@ namespace rockit {
 #define RT_NODE_FILTER_RKNN              "node_rknn"
 #define RT_NODE_FILTER_RKFACE            "node_rkface"
 #define RT_NODE_FILTER_RESAMPLE          "node_resample"
+
 
 
 // common root types for task node.
@@ -112,6 +116,9 @@ namespace rockit {
 #define OPT_NODE_BUFFER_ALLOC_TYPE       "node_buff_alloc_type"
 #define OPT_NODE_TRANS_RECT              "node_trans_rect"
 #define OPT_NODE_DISPATCH_EXEC           "node_disp_exec"
+#define OPT_NODE_MAX_INPUT_COUNT         "node_max_input_count"
+#define OPT_NODE_BUFFER_STAT             "node_buffer_stat"
+#define OPT_NODE_GATE_MODE               "node_gate_mode"
 
 #define OPT_FILE_READ_SIZE               "opt_read_size"
 
@@ -125,8 +132,10 @@ namespace rockit {
 #define OPT_STREAM_FMT_OUT_PREFIX        "stream_fmt_out_"
 #define OPT_STREAM_INPUT_MODE            "stream_mode_in"
 
+#define OPT_CODEC_TYPE                   "opt_codec_type"
+#define OPT_CODEC_ID                     "opt_codec_id"
+
 // common parameters for codec video. subnodes of KEY_ROOT_NODE_STREAM_OPTS
-#define OPT_VIDEO_CODEC_TYPE             "opt_codec_type"
 #define OPT_VIDEO_SVC                    "opt_svc"
 #define OPT_VIDEO_SMART                  "opt_smart"
 #define OPT_VIDEO_GOP                    "opt_gop"
@@ -140,6 +149,7 @@ namespace rockit {
 #define OPT_VIDEO_HEIGHT                 "opt_height"
 #define OPT_VIDEO_VIR_WIDTH              "opt_vir_width"
 #define OPT_VIDEO_VIR_HEIGHT             "opt_vir_height"
+#define OPT_VIDEO_PIX_FORMAT             "opt_pix_format"
 #define OPT_VIDEO_QUALITY_INIT           "opt_qp_init"
 #define OPT_VIDEO_QUALITY_STEP           "opt_qp_step"
 #define OPT_VIDEO_QUALITY_MIN            "opt_qp_min"
@@ -152,11 +162,11 @@ namespace rockit {
 #define OPT_VIDEO_REGIONS_RI             "opt_regions_ri"
 #define OPT_VIDEO_TRANS_RECT             "opt_trans_rect"
 #define OPT_VIDEO_COLOR_RANGE            "opt_color_range"
+#define OPT_VIDEO_TIME_REF               "opt_time_ref"
 
 #define OPT_VIDEO_DEC_SPLIT_MODE         "opt_dec_split_mode"
 
 // common parameters for codec audio. subnodes of KEY_ROOT_NODE_STREAM_OPTS
-#define OPT_AUDIO_CODEC_TYPE             "opt_codec_type"
 #define OPT_AUDIO_CHANNEL                "opt_channel"
 #define OPT_AUDIO_CHANNEL_LAYOUT         "opt_channel_layout"
 #define OPT_AUDIO_SAMPLE_RATE            "opt_samaple_rate"
@@ -180,15 +190,20 @@ namespace rockit {
 #define OPT_AUDIO_AEC_NLP_URI            "opt_aec_nlp_uri"
 #define OPT_AUDIO_AEC_NLP_PLUS_URI       "opt_aec_nlp_plus_uri"
 
-#define OPT_TIMESTAMP                    "opt_timestamp"
-#define OPT_PTS                          "opt_pts"
 #define OPT_PEROID_SIZE                  "opt_peroid_size"
 #define OPT_PEROID_COUNT                 "opt_peroid_count"
 #define OPT_AUDIO_MUTE                   "opt_mute"
 #define OPT_AUDIO_VOLUME                 "opt_volume"
 #define OPT_AUDIO_START_DELAY            "opt_start_delay"
 #define OPT_AUDIO_STOP_DELAY             "opt_stop_delay"
+#define OPT_ADEC_MODE                    "opt_adec_mode"
 
+#define OPT_AV_PTS                       "opt_av_pts"
+#define OPT_AV_DTS                       "opt_av_dts"
+#define OPT_AV_SEQ                       "opt_av_seq"
+#define OPT_AV_EOS                       "opt_av_eos"
+#define OPT_AV_ERR                       "opt_av_err"
+#define OPT_AV_DURATION                  "opt_av_duration"
 
 // common parameters for filter: RKNN with move detection.
 // subnodes of KEY_ROOT_NODE_STREAM_OPTS
@@ -244,7 +259,7 @@ namespace rockit {
 
 #define OPT_EXEC_THREAD_NUM             "exec_thread_num"
 
-
+#define OPT_IO_STREAM_MODE              "opt_io_stream_mode"
 /*
  * AI Server  -- {DBUS | RNDIS} -- Remote HOST(TV AI)
  *
@@ -338,9 +353,14 @@ typedef enum _RTStreamType {
     RT_STM_TYPE_MAX,
 } RTStreamType;
 
+typedef enum _RTNodeGateMode {
+    RT_NODE_GATE_NORMAL = 0,
+    RT_NODE_GATE_AUTO,
+    RT_NODE_GATE_DELAYOPEN,
+    RT_NODE_GATE_MAX,
+} RTNodeGateMode;
+
 typedef std::pair<std::string, std::string>              RTTaskNodeOpt;
 typedef std::vector<std::pair<std::string, std::string>> RTTaskNodeOpts;
-
-}  // namespace rockit
 
 #endif   // SRC_RT_TASK_APP_GRAPH_RTNODECOMMON_H

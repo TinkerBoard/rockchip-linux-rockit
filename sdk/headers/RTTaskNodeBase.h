@@ -28,6 +28,7 @@
 #include "RTTaskNodeOptions.h"
 #include "RTTaskNodeFactory.h"
 #include "RTNodeCommon.h"
+#include "RTStreamInfo.h"
 
 typedef struct outputStreamLinkMap {
     int outputStreamIndex;
@@ -67,6 +68,7 @@ class RTTaskNodeBase {
     RT_RET              processNode(RTTaskNodeContext *packet);
     void                nodeOpened();
     bool                closed();
+    RT_RET              flush();
     RT_BOOL             isDone();
     RT_RET              closeNode();
     RT_RET              closeInputStreams();
@@ -120,6 +122,7 @@ class RTTaskNodeBase {
 
     RT_RET              sendInterrupt(std::string reason);
     RT_RET              dump();
+    RTTaskNodeBufStat   getBufferStat();
 
  public:
     virtual RT_RET      open(RTTaskNodeContext *context) = 0;
@@ -134,6 +137,7 @@ class RTTaskNodeBase {
  private:
     RT_RET              addInputStreams(RTInputStreamManager *inputManager);
     RT_RET              addOutputStreams(RTOutputStreamManager *outputManager);
+    RT_RET              prepareOptionsForRun();
 
  protected:
     INT32 mNodeId;
@@ -183,6 +187,7 @@ class RTTaskNodeBase {
     std::vector<INT32> mSourceNodes;
     std::vector<RTStreamInfo *> mInputStreamInfos;
     std::vector<RTStreamInfo *> mOutputStreamInfos;
+    RTTaskNodeBufStat mBufStat;
 };
 
 #endif  // SRC_RT_TASK_TASK_GRAPH_RTTASKNODEBASE_H_

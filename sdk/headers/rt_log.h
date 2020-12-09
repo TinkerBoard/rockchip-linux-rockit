@@ -27,25 +27,32 @@
 #define LOG_TAG NULL
 #endif
 
-#define LOG_FLAG_ON   1
-#define LOG_FLAG_OFF  0
+#define RT_LOG_FATAL      1   /* fatal error                          */
+#define RT_LOG_ERR        2   /* error conditions                     */
+#define RT_LOG_WARN       3   /* warning conditions                   */
+#define RT_LOG_INFO       4   /* informational                        */
+#define RT_LOG_DEBUG      5   /* debug-level messages                 */
+#define RT_LOG_VERBOSE    6   /* verbose                              */
 
-#define LOG_FLAG 0
-
-//! super macro.
-#define RT_LOGD_IF(condition, format, ...) if (condition > 0) LOG_TRACE(format, ##__VA_ARGS__)
-#define RT_LOGE_IF(condition, format, ...) if (condition > 0) LOG_ERROR(format, ##__VA_ARGS__)
-
-//! super macro.
-#define RT_LOGT(format, ...) LOG_TRACE(format, ##__VA_ARGS__)
-#define RT_LOGD(format, ...) LOG_TRACE(format, ##__VA_ARGS__)
-#define RT_LOGE(format, ...) LOG_ERROR(format, ##__VA_ARGS__)
+#define LOG_LEVEL         RT_LOG_DEBUG
+#define LOG_FLAG          0
 
 //! super macro.
-#define LOG_TRACE(fmt, ...) \
-        rt_log(LOG_TAG, fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
-#define LOG_ERROR(fmt, ...) \
-        rt_err(LOG_TAG, fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define RT_LOGD_IF(condition, format, ...) if (condition > 0) LOG_TRACE(RT_LOG_DEBUG, format, ##__VA_ARGS__)
+#define RT_LOGE_IF(condition, format, ...) if (condition > 0) LOG_ERROR(RT_LOG_ERR, format, ##__VA_ARGS__)
+
+//! super macro.
+#define RT_LOGE(format, ...) LOG_ERROR(RT_LOG_ERR, format, ##__VA_ARGS__)
+#define RT_LOGW(format, ...) LOG_TRACE(RT_LOG_WARN, format, ##__VA_ARGS__)
+#define RT_LOGI(format, ...) LOG_TRACE(RT_LOG_INFO, format, ##__VA_ARGS__)
+#define RT_LOGD(format, ...) LOG_TRACE(RT_LOG_DEBUG, format, ##__VA_ARGS__)
+#define RT_LOGV(format, ...) LOG_TRACE(RT_LOG_VERBOSE, format, ##__VA_ARGS__)
+
+//! super macro.
+#define LOG_TRACE(level, fmt, ...) \
+        rt_log(level, LOG_TAG, fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define LOG_ERROR(level, fmt, ...) \
+        rt_err(level, LOG_TAG, fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 //! log function marcro.
 // external api
@@ -67,10 +74,10 @@
 extern "C" {
 #endif
 
-void rt_set_log_flag(UINT32 flag);
-void rt_log(const char *tag, const char *fmt, const char *fname,
+void rt_set_log_level(INT32 level);
+void rt_log(INT32 level, const char *tag, const char *fmt, const char *fname,
                             const UINT16 row, ...);
-void rt_err(const char *tag, const char *fmt, const char *fname,
+void rt_err(INT32 level, const char *tag, const char *fmt, const char *fname,
                             const UINT16 row, ...);
 
 #ifdef __cplusplus

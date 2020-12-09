@@ -55,18 +55,24 @@ class RTScheduler {
     void scheduleUnthrottledNodes(const std::vector<RTTaskNode *>& nodesToSchedule);
     void scheduleSuspendThrottledNodes(const std::vector<RTTaskNode *>& nodes);
 
-    RT_RET waitUntilDone();
+    RT_RET waitUntilDone(INT64 timeoutUs = -1);
+    // Wait until the running graph is in the idle mode, which is when nothing can
+    // be scheduled and nothing is running in the worker threads.  This function
+    // can be called only after Start().
+    // Runs application thread tasks while waiting.
+    RT_RET waitUntilIdle(INT64 timeoutUs = -1);
     RT_RET cleanupAfterRun();
-    void applicationThreadAwait(
-          const std::function<bool()>& wakeup_condition);
+    RT_RET applicationThreadAwait(
+          const std::function<bool()>& wakeupCondition, INT64 timeoutUs = -1);
 
     void queueIdleStateChanged(bool idle);
     void addNodeToOpenedQueue(RTTaskNode *node);
     void removeNodeFromOpenedQueue(RTTaskNode *node);
+    RT_BOOL checkScheduleDone();
     RT_RET tryToScheduleIdleNode();
     void handleIdle();
     bool isIdle();
-
+    RT_BOOL isRunning();
     void start();
 
     void flush();
@@ -87,8 +93,11 @@ class RTScheduler {
     void notifyHasError(RT_BOOL hasError);
     void notifySchedulerPaused();
 
+    void throttledGraphInputStream();
+    void unthrottledGraphInputStream();
+    RT_RET waitUntilGraphInputStreamUnthrottled(RtMutex *secondaryMutex, INT64 timeoutUs);
     void emittedObservedOutput();
-    RT_RET waitForObservedOutput();
+    RT_RET waitForObservedOutput(INT64 timeoutUs = -1);
     RT_RET waitForUntilPaused();
 
  private:
@@ -148,6 +157,10 @@ class RTScheduler {
     // Data accessed by all SchedulerQueues.
     RTSchedulerShared mShared;
     RTTaskGraph *mTaskGraph;
+    // Number of throttled graph input streams.
+    INT32 mThrottledGraphInputStreamCount = 0;
+    // Used to stop WaitUntilGraphInputStreamUnthrottled.
+    INT32 mUnthrottleSeqNum = 0;
     // Used to stop WaitForObservedOutput.
     RT_BOOL mObservedOutputSignal = RT_FALSE;
     // True if an application thread is waiting in waitForObservedOutput.

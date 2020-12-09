@@ -28,6 +28,11 @@
 #include "rt_metadata.h"
 #include "RTStreamInfo.h"
 
+typedef struct _RTTaskNodeBufStat {
+    std::map<std::string/*stream type*/, RTStreamBufStat> inputBufStat;
+    std::map<std::string/*stream type*/, RTStreamBufStat> outputBufStat;
+} RTTaskNodeBufStat;
+
 class RTMediaBuffer;
 class RTBufferListener;
 class RTOutputStreamShared;
@@ -50,6 +55,7 @@ class RTTaskNodeContext {
     INT32               nodeId() const { return mNodeId; }
     void                suspend() { mSuspend = true; }
     void                resume() { mSuspend = false; }
+    RT_RET              flush();
     bool                isSuspend() { return mSuspend; }
     RtMetaData*         options() { return mOptions; }
     void                sendInterrupt(std::string reason);
@@ -77,6 +83,7 @@ class RTTaskNodeContext {
                                            std::string streamType = "none");
     RT_RET              queueOutputBuffer(RTMediaBuffer *packet, std::string streamType = "none");
     RT_RET              dump();
+    RT_RET              getBufferStat(RTTaskNodeBufStat *stat);
 
  private:
     std::vector<RTMediaBuffer *>*   inputs(std::string streamType = "none");
