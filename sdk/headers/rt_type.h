@@ -22,13 +22,13 @@
 
 #include <stdint.h>
 
-#define RT_NULL 0
+#define RT_NULL     0
+#define RT_NONE     "none"
+#define RT_BOOL     char
+#define RT_TRUE     1
+#define RT_FALSE    0
 
-#define TODO_FLAG 0
-
-#define RT_BOOL  char
-#define RT_TRUE  1
-#define RT_FALSE 0
+#define TODO_FLAG   0
 
 #ifndef uid_t
 #define uid_t        uint32_t

@@ -96,6 +96,7 @@ class RTUVCGraph {
     std::string getAIAlgorithmType(std::string type);
     RT_RET updateAIAlgorithm();
     RT_RET setAIAlgorithm(RT_BOOL enable, std::string type);
+    RT_RET setZoomPtz(RT_BOOL isZoom);
 
     static void* threadLoop(void* arg);
 

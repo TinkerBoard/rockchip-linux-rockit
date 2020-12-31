@@ -109,5 +109,37 @@ class RtSemaphore {
     void* mData;
 };
 
+class RtReference {
+ public:
+    RtReference();
+    ~RtReference();
+    void addRef();
+    void decRef();
+    void wait();
+    void waitExit();
+    INT32 getRefValue();
+
+ private:
+    INT32         mRefNum;
+    RtCondition  *mCond;
+    RtMutex      *mLock;
+};
+
+class RtAutoRef {
+ public:
+    explicit inline RtAutoRef(RtReference* ref)
+            : mRef(ref) {
+       mRef->addRef();
+    }
+
+    inline ~RtAutoRef() {
+        mRef->decRef();
+    }
+
+ private:
+    RtReference* mRef;
+};
+
+
 #endif  // INCLUDE_RT_BASE_RT_MUTEX_H_
 

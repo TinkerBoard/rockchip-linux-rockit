@@ -47,6 +47,7 @@ class RTInputStreamManager;
 class RTOutputStreamHandler;
 class RTOutputStreamManager;
 class RTSchedulerQueue;
+class RTMediaBufferPool;
 class RTTaskNodeBase {
  public:
     RTTaskNodeBase();
@@ -121,8 +122,12 @@ class RTTaskNodeBase {
     }
 
     RT_RET              sendInterrupt(std::string reason);
+    RT_RET              cancelInterrupt(std::string reason);
     RT_RET              dump();
     RTTaskNodeBufStat   getBufferStat();
+
+    RT_RET              attachOutStreamPool(RTMediaBufferPool *pool, std::string streamType = RT_NONE);
+    RT_RET              detachOutStreamPool(std::string streamType = RT_NONE);
 
  public:
     virtual RT_RET      open(RTTaskNodeContext *context) = 0;
@@ -138,6 +143,7 @@ class RTTaskNodeBase {
     RT_RET              addInputStreams(RTInputStreamManager *inputManager);
     RT_RET              addOutputStreams(RTOutputStreamManager *outputManager);
     RT_RET              prepareOptionsForRun();
+    RT_RET              processPassThrough(RTTaskNodeContext *nodeContext);
 
  protected:
     INT32 mNodeId;
@@ -187,7 +193,8 @@ class RTTaskNodeBase {
     std::vector<INT32> mSourceNodes;
     std::vector<RTStreamInfo *> mInputStreamInfos;
     std::vector<RTStreamInfo *> mOutputStreamInfos;
-    RTTaskNodeBufStat mBufStat;
+    RTTaskNodeBufStat           mBufStat;
+    RT_BOOL                     mIsPassThrough;
 };
 
 #endif  // SRC_RT_TASK_TASK_GRAPH_RTTASKNODEBASE_H_

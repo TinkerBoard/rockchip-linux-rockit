@@ -46,6 +46,7 @@
 #define NODE_NAME_EPTZ          "rkeptz"
 #define NODE_NAME_STASTERIA     "st_asteria"  // sensetime asteria
 #define NODE_NAME_AIMATTING     "ai_matting"
+#define NODE_NAME_GLPSS         "rkglpss"
 
 #define NODE_NAME_RESAMPLE      "resample"
 #define NODE_NAME_ALSA_CAPTURE  "alsa_capture"
@@ -85,8 +86,6 @@
 #define RT_NODE_FILTER_RKNN              "node_rknn"
 #define RT_NODE_FILTER_RKFACE            "node_rkface"
 #define RT_NODE_FILTER_RESAMPLE          "node_resample"
-
-
 
 // common root types for task node.
 #define KEY_ROOT_PIPE_ID                 "pipe_"
@@ -132,9 +131,6 @@
 #define OPT_STREAM_FMT_OUT_PREFIX        "stream_fmt_out_"
 #define OPT_STREAM_INPUT_MODE            "stream_mode_in"
 
-#define OPT_CODEC_TYPE                   "opt_codec_type"
-#define OPT_CODEC_ID                     "opt_codec_id"
-
 // common parameters for codec video. subnodes of KEY_ROOT_NODE_STREAM_OPTS
 #define OPT_VIDEO_SVC                    "opt_svc"
 #define OPT_VIDEO_SMART                  "opt_smart"
@@ -163,6 +159,14 @@
 #define OPT_VIDEO_TRANS_RECT             "opt_trans_rect"
 #define OPT_VIDEO_COLOR_RANGE            "opt_color_range"
 #define OPT_VIDEO_TIME_REF               "opt_time_ref"
+#define OPT_VIDEO_COLOR                  "opt_color"
+
+/* draw line in picture */
+#define OPT_LINE_START_X                 "opt_line_startx"
+#define OPT_LINE_START_Y                 "opt_line_starty"
+#define OPT_LINE_END_X                   "opt_line_endx"
+#define OPT_LINE_END_Y                   "opt_line_endy"
+#define OPT_LINE_THICK                   "opt_line_thick"
 
 #define OPT_VIDEO_DEC_SPLIT_MODE         "opt_dec_split_mode"
 
@@ -196,7 +200,11 @@
 #define OPT_AUDIO_VOLUME                 "opt_volume"
 #define OPT_AUDIO_START_DELAY            "opt_start_delay"
 #define OPT_AUDIO_STOP_DELAY             "opt_stop_delay"
-#define OPT_ADEC_MODE                    "opt_adec_mode"
+
+// define new option begin here
+#define OPT_NODE_ID                      "opt_node_id"
+#define OPT_NODE_CMD                     "opt_node_cmd"
+#define OPT_NODE_OP                      "opt_node_op"
 
 #define OPT_AV_PTS                       "opt_av_pts"
 #define OPT_AV_DTS                       "opt_av_dts"
@@ -205,8 +213,13 @@
 #define OPT_AV_ERR                       "opt_av_err"
 #define OPT_AV_DURATION                  "opt_av_duration"
 
-// common parameters for filter: RKNN with move detection.
-// subnodes of KEY_ROOT_NODE_STREAM_OPTS
+#define OPT_CODEC_ID                     "opt_codec_id"
+#define OPT_CODEC_TYPE                   "opt_codec_type"
+#define OPT_CODEC_DEC_MODE               "opt_dec_mode"
+#define OPT_CODEC_EXT_DATA               "opt_ext_data"
+#define OPT_CODEC_EXT_SIZE               "opt_ext_size"
+
+// define new option end here
 #define OPT_FILTER_WIDTH                 "opt_width"
 #define OPT_FILTER_HEIGHT                "opt_height"
 #define OPT_FILTER_VIR_WIDTH             "opt_vir_width"
@@ -230,6 +243,8 @@
 #define OPT_FILTER_DST_RECT_H            "opt_dst_rect_h"
 #define OPT_FILTER_DST_VIR_WIDTH         "opt_dst_vir_width"
 #define OPT_FILTER_DST_VIR_HEIGHT        "opt_dst_vir_height"
+#define OPT_FILTER_COMPRESS              "opt_compress_mode"
+#define OPT_FILTER_DST_COMPRESS          "opt_dst_compress_mode"
 
 #define OPT_V4L2_BUF_TYPE               "opt_buf_type"
 #define OPT_V4L2_MEM_TYPE               "opt_mem_type"
@@ -260,6 +275,9 @@
 #define OPT_EXEC_THREAD_NUM             "exec_thread_num"
 
 #define OPT_IO_STREAM_MODE              "opt_io_stream_mode"
+
+#define OPT_RGA_BLEND                   "opt_rga_blend"
+
 /*
  * AI Server  -- {DBUS | RNDIS} -- Remote HOST(TV AI)
  *

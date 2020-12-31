@@ -66,9 +66,10 @@
 #define RT_LOG_FUNC_CALLED() RT_LOGD_IF(LOG_FLAG, "%s called", __FUNCTION__)
 
 // construct/destruct
-#define RT_LOG_CONSTRUCT_IN(thiz)  RT_LOGD_IF(LOG_FLAG, "%s(%p) construct", __FUNCTION__, thiz)
-#define RT_LOG_DESTRUCT_DONE(thiz) RT_LOGD_IF(LOG_FLAG, "%s(%p) destructor ok", __FUNCTION__, thiz)
-
+#define RT_LOG_CONSTRUCT_IN(thiz)    RT_LOGD_IF(LOG_FLAG, "%s(%p) construct", __FUNCTION__, thiz)
+#define RT_LOG_CONSTRUCT_DONE(thiz)  RT_LOGD_IF(LOG_FLAG, "%s(%p) construct ok", __FUNCTION__, thiz)
+#define RT_LOG_DESTRUCT_IN(thiz)     RT_LOGD_IF(LOG_FLAG, "%s(%p) destructor", __FUNCTION__, thiz)
+#define RT_LOG_DESTRUCT_DONE(thiz)   RT_LOGD_IF(LOG_FLAG, "%s(%p) destructor ok", __FUNCTION__, thiz)
 
 #ifdef __cplusplus
 extern "C" {

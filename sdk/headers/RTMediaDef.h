@@ -310,21 +310,19 @@ typedef enum _RTAudioFormat {
     RT_AUDIO_FMT_MAX,
 } RTAudioFormat;
 
-typedef enum _RTAdecMode {
-    /*
-     * require input is valid dec pack(a complete frame encode result),
-     * e.g.the stream get from AENC is a valid dec pack, the stream know
-     * actually pack len from file is also a dec pack.
-     * this mode is high-performative*/
-    RT_CODEC_MODE_PACK = 0,
-    /*
-     * input is stream,low-performative, if you couldn't find out whether
-     * a stream is vaild dec pack,you could use this mode
-     */
-    RT_CODEC_MODE_STREAM,
+typedef enum _RTCompressMode {
+    RT_COMPRESS_MODE_NONE = 0,   /* no compress */
+    RT_COMPRESS_AFBC_16x16,
 
-    RT_CODEC_MODE_BUTT,
-} RTAdecMode;
+    RT_COMPRESS_MODE_BUTT
+} RTCompressMode;
+
+typedef enum _RTDecMode {
+    RT_DEC_MODE_FRAME = 0,   /* send by frame */
+    RT_DEC_MODE_STREAM,      /* send by stream */
+    RT_DEC_MODE_COMPAT,      /* One frame supports multiple packets sending */
+    RT_DEC_MODE_BUTT,
+} RTDecMode;
 
 typedef enum _RTClockType {
     RT_CLOCK_NONE = -1,

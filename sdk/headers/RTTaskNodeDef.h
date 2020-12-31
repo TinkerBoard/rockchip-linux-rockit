@@ -52,6 +52,7 @@ typedef enum _RTStubUid {
     kStubFilterEptz        = MKTAG('e', 'p', 't', 'z'),
     kStubfilterAudio3A     = MKTAG('f', 'a', 'd', 'a'),
     kStubfilterAnr         = MKTAG('f', 'a', 'n', 'r'),
+    kStubfilterGLPss       = MKTAG('g', 'l', 'p', 's'),
 
     kStubfilterSKV        = MKTAG('f', 's', 'k', 'v'),
     kStubfilterSKVAec     = MKTAG('f', 's', 'a', 'e'),

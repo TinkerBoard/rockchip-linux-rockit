@@ -29,6 +29,7 @@
 
 #include "rt_header.h"
 #include "rt_metadata.h"
+#include "RTGraphCommon.h"
 
 typedef enum ExecutorMode {
     EXECUTOR_THREAD_POOL,
@@ -71,6 +72,7 @@ class RTExecutor;
 class RTScheduler;
 class RTMediaBuffer;
 class RTGraphParser;
+class RTTaskGraphConfig;
 
 class RTTaskGraph {
  public:
@@ -79,6 +81,7 @@ class RTTaskGraph {
 
  public:
     // external common api
+    std::string getName();
     RT_RET      autoBuild(const char* config, RT_BOOL isFileType = RT_TRUE);
     RT_RET      prepare(RtMetaData *params = RT_NULL);
     RT_RET      start();
@@ -88,22 +91,29 @@ class RTTaskGraph {
     RT_RET      flush();
     RT_RET      release();
     RT_RET      invoke(INT32 cmd, RtMetaData *params);
-    RT_RET      observeOutputStream(const std::string& streamName,
-                 INT32 streamId,
-                 std::function<RT_RET(RTMediaBuffer *)> streamCallback);
-    RT_RET      cancelObserveOutputStream(INT32 streamId);
     RT_RET      waitForObservedOutput(INT64 timeoutUs = -1);
     RT_RET      waitUntilDone(INT64 timeoutUs = -1);
     RT_RET      dump();
 
+    RTCBHandle  observeOutputStream(
+                    const std::string streamName,
+                    std::function<RT_RET(RTMediaBuffer *)> streamCallback);
+    RT_RET      cancelObserveOutputStream(RTCBHandle handle);
+
  public:
-    // external link graph api
+    // deprecated api
+    RT_RET      observeOutputStream(const std::string& streamName,
+                    INT32 streamId,
+                    std::function<RT_RET(RTMediaBuffer *)> streamCallback);
+    RT_RET      cancelObserveOutputStream(INT32 streamId);
     RT_RET      addSubGraph(const char *graphConfigFile);
     RT_RET      removeSubGraph(const char *graphConfigFile);
-    RT_RET      addDownGraph(RTTaskGraph *graph, std::string downStreamName, INT32 streamId);
-    RT_RET      removeDownGraph(RTTaskGraph *graph, INT32 streamId);
-    RT_RET      setupGraphInputStream(std::string streamName, INT32 downStreamId);
-    RT_RET      setGraphOutputStreamAddMode(RTGraphIOStreamMode mode);
+
+ public:
+    // external link graph api
+    RTLinkHandle addDownGraph(RTTaskGraph *graph, std::string srcName, std::string dstName);
+    RT_RET       removeDownGraph(RTLinkHandle handle);
+    RT_RET       setGraphOutputStreamAddMode(RTGraphIOStreamMode mode);
 
  public:
     // external link node api
@@ -130,8 +140,9 @@ class RTTaskGraph {
 
  protected:
     RT_RET      addPacketToInputStream(std::string streamName, INT64 timeoutUs, RTMediaBuffer *packet);
-    RT_RET      addOutputStreamPoller(const std::string streamName);
-    RT_RET      removeOutputStreamPoller(const std::string streamName);
+    RTCBHandle  addOutputStreamPoller(const std::string streamName);
+    RT_RET      removeOutputStreamPoller(RTCBHandle handle);
+    RT_RET      checkInputStreamFull(std::string streamName);
 
  private:
     template <class T, class... Args>
@@ -188,13 +199,16 @@ class RTTaskGraph {
     RT_RET      linkNode(INT32 srcNodeId, INT32 dstNodeId);
     RT_RET      unlinkNode(INT32 srcNodeId, INT32 dstNodeId);
 
+    RT_RET      setupGraphInputStream(std::string streamName);
+
  protected:
-    std::string     mTagName;
-    RT_BOOL         mHasError;
-    RtMutex         mFullInputStreamsMutex;
-    RtMutex         mErrorMutex;
-    RTScheduler    *mScheduler;
-    RtMutex        *mLock;
+    std::string          mTagName;
+    RT_BOOL              mHasError;
+    RtMutex              mFullInputStreamsMutex;
+    RtMutex              mErrorMutex;
+    RTScheduler         *mScheduler;
+    RtMutex             *mLock;
+    RTTaskGraphConfig   *mGraphConfig;
     std::map<INT32, RTExecutor *>                         mExecutors;
     std::map<INT32/* node id */, RTTaskNode *>            mNodes;
     std::map<INT32, std::vector<RTInputStreamManager *>>  mFullInputStreams;
@@ -202,11 +216,14 @@ class RTTaskGraph {
     std::map<INT32/* node id */, RTOutputStreamManager *> mOutputManagers;
     // The graph output streams.
     std::map<INT32, RTGraphOutputStream *>                mGraphOutputStreams;
-    std::map<std::string, RTGraphInputStream *>           mGraphInputStreams;
+    std::map<INT32, RTGraphInputStream *>                 mGraphInputStreams;
     // Maps graph input streams to their virtual node ids.
-    std::map<std::string, INT32>                          mGraphInputStreamNodeIds;
+    std::map<std::string, INT32>                          mGraphInputStreamIds;
     std::map<std::string, std::string>                    mLinkShips;
     std::vector<std::string>                              mLinkModes;
+    // Compatible with old interfaces
+    std::map<INT32/* old stream id */, std::string>       mOutputStreamCompMaps;
+    std::map<INT32/* old stream id */, RTCBHandle>        mGraphOutCompMaps;
 };
 
 #endif  // SRC_RT_TASK_APP_GRAPH_RTTASKGRAPH_H_

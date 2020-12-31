@@ -36,6 +36,7 @@ typedef struct _RTTaskNodeBufStat {
 class RTMediaBuffer;
 class RTBufferListener;
 class RTOutputStreamShared;
+class RTMediaBufferPool;
 class RTTaskNodeContext {
  public:
     explicit RTTaskNodeContext(
@@ -59,6 +60,7 @@ class RTTaskNodeContext {
     bool                isSuspend() { return mSuspend; }
     RtMetaData*         options() { return mOptions; }
     void                sendInterrupt(std::string reason);
+    void                cancelInterrupt(std::string reason);
     void                setOutputBufferListener(RTBufferListener *listener);
     void                setMaxBatchPrcoessSize(INT32 maxBatchSize);
     INT32               getMaxBatchPrcoessSize();
@@ -84,6 +86,9 @@ class RTTaskNodeContext {
     RT_RET              queueOutputBuffer(RTMediaBuffer *packet, std::string streamType = "none");
     RT_RET              dump();
     RT_RET              getBufferStat(RTTaskNodeBufStat *stat);
+
+    RT_RET              attachOutStreamPool(RTMediaBufferPool *pool, std::string streamType = "none");
+    RT_RET              detachOutStreamPool(std::string streamType = "none");
 
  private:
     std::vector<RTMediaBuffer *>*   inputs(std::string streamType = "none");

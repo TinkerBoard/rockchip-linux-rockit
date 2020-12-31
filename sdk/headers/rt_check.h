@@ -32,13 +32,27 @@
     } while (0)
 
 #define RET_CHECK_OP(name, op, actual, exp) \
-            do { \
-                if (actual op exp) { \
-                    /* TODO */ \
-                } else { \
-                    return RT_ERR_UNKNOWN; \
-                } \
-            } while (0)
+    do { \
+        if (actual op exp) { \
+            /* TODO */ \
+        } else { \
+            return RT_ERR_UNKNOWN; \
+        } \
+    } while (0)
+
+#define RET_CHECK_FUNC(func, type, value) \
+    do { \
+        type ret = func; \
+        if (ret != value) \
+            return ret; \
+    } while (0)
+
+#define RET_CHECK_IS_NULL(ptr, ret) \
+    do { \
+        if (ptr == RT_NULL) { \
+            return ret; \
+        } \
+    } while (0)
 
 #define CHECK_EQ(actual, exp) CHECK_OP("CHECK_EQ", ==, actual, exp)
 #define CHECK_UE(actual, exp) CHECK_OP("CHECK_UE", !=, actual, exp)

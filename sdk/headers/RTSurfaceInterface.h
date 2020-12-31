@@ -63,8 +63,8 @@ class RTSurfaceInterface {
     virtual INT32 queueBuffer(void *buf, INT32 fence) = 0;
     virtual INT32 dequeueBuffer(void **buf) = 0;
     virtual INT32 dequeueBufferAndWait(RTNativeWindowBufferInfo *info) = 0;
-    virtual INT32 mmapBuffer(INT32 shareFd, INT32 size, INT32 offset, void **ptr) = 0;
-    virtual INT32 munmapBuffer(void **ptr, INT32 size) = 0;
+    virtual INT32 mmapBuffer(RTNativeWindowBufferInfo *info, void **ptr) = 0;
+    virtual INT32 munmapBuffer(void **ptr, INT32 size, void *buf) = 0;
 
     virtual INT32 setCrop(INT32 left, INT32 top, INT32 right, INT32 bottom) = 0;
     virtual INT32 setUsage(INT32 usage) = 0;
