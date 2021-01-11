@@ -116,7 +116,6 @@
 #define OPT_NODE_TRANS_RECT              "node_trans_rect"
 #define OPT_NODE_DISPATCH_EXEC           "node_disp_exec"
 #define OPT_NODE_MAX_INPUT_COUNT         "node_max_input_count"
-#define OPT_NODE_BUFFER_STAT             "node_buffer_stat"
 #define OPT_NODE_GATE_MODE               "node_gate_mode"
 
 #define OPT_FILE_READ_SIZE               "opt_read_size"
@@ -160,6 +159,8 @@
 #define OPT_VIDEO_COLOR_RANGE            "opt_color_range"
 #define OPT_VIDEO_TIME_REF               "opt_time_ref"
 #define OPT_VIDEO_COLOR                  "opt_color"
+#define OPT_VIDEO_SPLIT_MODE             "opt_split_mode"
+#define OPT_VIDEO_DROP_ERR_FRAME         "opt_drop_err_frame"
 
 /* draw line in picture */
 #define OPT_LINE_START_X                 "opt_line_startx"
@@ -167,8 +168,6 @@
 #define OPT_LINE_END_X                   "opt_line_endx"
 #define OPT_LINE_END_Y                   "opt_line_endy"
 #define OPT_LINE_THICK                   "opt_line_thick"
-
-#define OPT_VIDEO_DEC_SPLIT_MODE         "opt_dec_split_mode"
 
 // common parameters for codec audio. subnodes of KEY_ROOT_NODE_STREAM_OPTS
 #define OPT_AUDIO_CHANNEL                "opt_channel"
@@ -205,6 +204,8 @@
 #define OPT_NODE_ID                      "opt_node_id"
 #define OPT_NODE_CMD                     "opt_node_cmd"
 #define OPT_NODE_OP                      "opt_node_op"
+#define OPT_NODE_PRIOR_TYPE              "opt_node_prior"
+#define OPT_NODE_BYPASS                  "opt_node_bypass"
 
 #define OPT_AV_PTS                       "opt_av_pts"
 #define OPT_AV_DTS                       "opt_av_dts"
@@ -243,6 +244,7 @@
 #define OPT_FILTER_DST_RECT_H            "opt_dst_rect_h"
 #define OPT_FILTER_DST_VIR_WIDTH         "opt_dst_vir_width"
 #define OPT_FILTER_DST_VIR_HEIGHT        "opt_dst_vir_height"
+#define OPT_FILTER_DST_PIX_FORMAT        "opt_dst_pix_format"
 #define OPT_FILTER_COMPRESS              "opt_compress_mode"
 #define OPT_FILTER_DST_COMPRESS          "opt_dst_compress_mode"
 

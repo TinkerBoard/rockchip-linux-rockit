@@ -29,7 +29,7 @@
 #define RT_MAX4(a, b, c, d)    RT_MAX((a), RT_MAX3((b), (c), (d)))
 
 #define RT_MIN(a, b)            ((a) > (b) ? (b) : (a))
-#define RT_MIN3(a, b, c)         RT_MIN(MPP_MIN(a, b), c)
+#define RT_MIN3(a, b, c)       RT_MIN(MPP_MIN(a, b), c)
 #define RT_MIN4(a, b, c, d)    RT_MIN((a), RT_MIN3((b), (c), (d)))
 
 #define RT_SWAP(type, a, b) \
@@ -42,6 +42,10 @@
 #define RT_ARRAY_ELEMS(a)      (sizeof(a) / sizeof((a)[0]))
 #define RT_ALIGN(x, a)         (((x) + (a) - 1) & ~((a) - 1))
 #define RT_ALIGN_16(x)         RT_ALIGN(x, 16)
+#define RT_ALIGN_64(x)         RT_ALIGN(x, 64)
+#define RT_ALIGN_256(x)        RT_ALIGN(x, 256)
+#define RT_ALIGN_256_ODD(x)    (RT_ALIGN(x, 256) | 256)
+
 #define RT_VSWAP(a, b)         { a ^= b; b ^= a; a ^= b; }
 
 #ifndef RT_INT64_MIN

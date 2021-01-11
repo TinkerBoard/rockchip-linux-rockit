@@ -22,6 +22,13 @@
 #ifndef INCLUDE_RT_BASE_RT_MUTEX_H_
 #define INCLUDE_RT_BASE_RT_MUTEX_H_
 
+#define RET_CHECK_REF(ref, ret) \
+    do { \
+        if (ref->isExited()) \
+            return ret; \
+    } while (0)
+
+
 typedef void *(*RTPthreadCallback)(void *);
 
 class RtMutex;
@@ -117,9 +124,11 @@ class RtReference {
     void decRef();
     void wait();
     void waitExit();
+    RT_BOOL isExited();
     INT32 getRefValue();
 
  private:
+    RT_BOOL       mIsExit;
     INT32         mRefNum;
     RtCondition  *mCond;
     RtMutex      *mLock;

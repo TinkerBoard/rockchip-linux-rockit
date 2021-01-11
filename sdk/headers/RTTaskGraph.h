@@ -47,7 +47,6 @@ typedef enum GraphCmd {
     GRAPH_CMD_PRIVATE_CMD,
     // for task node command
     GRAPH_CMD_TASK_NODE_PRIVATE_CMD,
-    GRAPH_CMD_QUERY_STAT,
     GRAPH_CMD_MAX,
 } RTGraphCmd;
 
@@ -73,7 +72,7 @@ class RTScheduler;
 class RTMediaBuffer;
 class RTGraphParser;
 class RTTaskGraphConfig;
-
+class RTTaskGraphStat;
 class RTTaskGraph {
  public:
     explicit RTTaskGraph(const char* tagName);
@@ -93,6 +92,7 @@ class RTTaskGraph {
     RT_RET      invoke(INT32 cmd, RtMetaData *params);
     RT_RET      waitForObservedOutput(INT64 timeoutUs = -1);
     RT_RET      waitUntilDone(INT64 timeoutUs = -1);
+    RT_RET      queryStat(RTTaskGraphStat *stat);
     RT_RET      dump();
 
     RTCBHandle  observeOutputStream(

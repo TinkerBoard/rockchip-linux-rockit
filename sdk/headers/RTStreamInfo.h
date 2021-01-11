@@ -24,17 +24,6 @@
 
 #include "rt_header.h"
 
-typedef struct _RTStreamBufStat {
-    INT32 maxCount;
-    INT32 totalCount;
-    INT32 unusedCount;
-    INT32 busyCount;
-    INT64 maxSize;
-    INT64 totalSize;
-    INT64 unusedSize;
-    INT64 busySize;
-} RTStreamBufStat;
-
 class RTStreamInfo {
  public:
     RTStreamInfo() {

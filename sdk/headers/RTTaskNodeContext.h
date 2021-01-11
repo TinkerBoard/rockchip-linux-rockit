@@ -28,15 +28,11 @@
 #include "rt_metadata.h"
 #include "RTStreamInfo.h"
 
-typedef struct _RTTaskNodeBufStat {
-    std::map<std::string/*stream type*/, RTStreamBufStat> inputBufStat;
-    std::map<std::string/*stream type*/, RTStreamBufStat> outputBufStat;
-} RTTaskNodeBufStat;
-
 class RTMediaBuffer;
 class RTBufferListener;
 class RTOutputStreamShared;
 class RTMediaBufferPool;
+class RTTaskNodeStat;
 class RTTaskNodeContext {
  public:
     explicit RTTaskNodeContext(
@@ -68,12 +64,11 @@ class RTTaskNodeContext {
     RTStreamInfo*       getInputInfo(std::string streamType = "none");
     RTStreamInfo*       getOutputInfo(std::string streamType = "none");
 
-    std::list<RTMediaBuffer *>* outputQueue(std::string streamType = "none");
+    RT_RET              getPackets(std::list<RTMediaBuffer *> *packets, std::string streamType = "none");
 
     RT_BOOL             hasInputStream(std::string streamType = "none");
     RT_BOOL             hasOutputStream(std::string streamType = "none");
     INT32               inputQueueSize(std::string streamType = "none");
-    INT32               outputQueueSize(std::string streamType = "none");
     RT_BOOL             inputIsEmpty(std::string streamType = "none");
     RT_BOOL             outputIsEmpty(std::string streamType = "none");
 
@@ -84,11 +79,12 @@ class RTTaskNodeContext {
                                            UINT32 size = 0,
                                            std::string streamType = "none");
     RT_RET              queueOutputBuffer(RTMediaBuffer *packet, std::string streamType = "none");
-    RT_RET              dump();
-    RT_RET              getBufferStat(RTTaskNodeBufStat *stat);
+    RT_RET              getBufferStat(RTTaskNodeStat *stat);
 
     RT_RET              attachOutStreamPool(RTMediaBufferPool *pool, std::string streamType = "none");
     RT_RET              detachOutStreamPool(std::string streamType = "none");
+
+    RT_RET              dump();
 
  private:
     std::vector<RTMediaBuffer *>*   inputs(std::string streamType = "none");
