@@ -16,9 +16,9 @@
             "stream_opts_extra": {
                 "opt_entity_name" : "rkispp_scale1",
                 "opt_width"       : 640,
-                "opt_height"      : 480,
+                "opt_height"      : 360,
                 "opt_vir_width"   : 640,
-                "opt_vir_height"  : 480,
+                "opt_vir_height"  : 360,
                 "opt_buf_type"    : 1,
                 "opt_mem_type"    : 4,
                 "opt_use_libv4l2" : 1,
