@@ -230,14 +230,14 @@ typedef enum _RTTrackType {
 #define RT_VIDEO_FMT_MASK                   0x000f0000
 #define RT_VIDEO_FMT_YUV                    0x00000000
 #define RT_VIDEO_FMT_RGB                    0x00010000
-#define RT_VIDEO_FMT_FBC                    0x00100000
-
-typedef enum _RTVideoFormat {
-    RT_FMT_YUV420SP        = RT_VIDEO_FMT_YUV,         /* YYYY... UV...            */
+/* Need to modify the rkPIXEL_FORMAT_E definition in rk_comm_video.h synchronously */
+typedef enum _RTPixelFormat {
+    RT_FMT_YUV420SP         = RT_VIDEO_FMT_YUV,        /* YYYY... UV...            */
     RT_FMT_YUV420SP_10BIT,
     RT_FMT_YUV422SP,                                   /* YYYY... UVUV...          */
     RT_FMT_YUV422SP_10BIT,                             ///< Not part of ABI
     RT_FMT_YUV420P,                                    /* YYYY... UUUU... VVVV     */
+    RT_FMT_YUV420P_VU,                                 /* YYYY... VVVV... UUUU     */
     RT_FMT_YUV420SP_VU,                                /* YYYY... VUVUVU...        */
     RT_FMT_YUV422P,                                    /* YYYY... UUUU... VVVV     */
     RT_FMT_YUV422SP_VU,                                /* YYYY... VUVUVU...        */
@@ -248,6 +248,7 @@ typedef enum _RTVideoFormat {
     RT_FMT_YUV411SP,                                   /* YYYY... UV...            */
     RT_FMT_YUV444SP,                                   /* YYYY... UVUVUVUV...      */
     RT_FMT_YUV_BUTT,
+
     RT_FMT_RGB565          = RT_VIDEO_FMT_RGB,         /* 16-bit RGB               */
     RT_FMT_BGR565,                                     /* 16-bit RGB               */
     RT_FMT_RGB555,                                     /* 15-bit RGB               */
@@ -258,12 +259,18 @@ typedef enum _RTVideoFormat {
     RT_FMT_BGR888,                                     /* 24-bit RGB               */
     RT_FMT_RGB101010,                                  /* 30-bit RGB               */
     RT_FMT_BGR101010,                                  /* 30-bit RGB               */
+    RT_FMT_ARGB1555,                                   /* 16-bit RGB               */
+    RT_FMT_ABGR1555,                                   /* 16-bit RGB               */
+    RT_FMT_ARGB4444,                                   /* 16-bit RGB               */
+    RT_FMT_ABGR4444,                                   /* 16-bit RGB               */
+    RT_FMT_ARGB8565,                                   /* 24-bit RGB               */
+    RT_FMT_ABGR8565,                                   /* 24-bit RGB               */
     RT_FMT_ARGB8888,                                   /* 32-bit RGB               */
     RT_FMT_ABGR8888,                                   /* 32-bit RGB               */
     RT_FMT_RGB_BUTT,
+
     RT_FMT_BUTT            = RT_FMT_RGB_BUTT,
-    RT_FMT_FBC_AFBC_V1     = RT_VIDEO_FMT_FBC,         /*for fbc                       */
-} RTVideoFormat;
+} RTPixelFormat;
 
 typedef enum _RTVideoRCMode {
     RT_RC_MODE_DISABLE = 0,
