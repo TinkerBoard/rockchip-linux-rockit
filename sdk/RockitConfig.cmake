@@ -5,6 +5,7 @@ set(ROCKIT_FILE_HEADERS ${CMAKE_CURRENT_LIST_DIR}/headers)
 option(ENABLE_UAC  "enable uac" ON)
 if (${ENABLE_UAC})
     set(ROCKIT_FILE_LIBS
+       ${CMAKE_CURRENT_LIST_DIR}/lib32/libavutil.so.56
        ${CMAKE_CURRENT_LIST_DIR}/lib32/libswresample.so.3
        ${CMAKE_CURRENT_LIST_DIR}/lib32/librockit.so)
 else()
