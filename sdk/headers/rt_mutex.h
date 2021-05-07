@@ -124,6 +124,7 @@ class RtReference {
     void decRef();
     void wait();
     void waitExit();
+    void reset();
     RT_BOOL isExited();
     INT32 getRefValue();
 

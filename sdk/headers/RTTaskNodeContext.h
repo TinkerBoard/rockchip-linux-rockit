@@ -81,8 +81,13 @@ class RTTaskNodeContext {
     RT_RET              queueOutputBuffer(RTMediaBuffer *packet, std::string streamType = "none");
     RT_RET              getBufferStat(RTTaskNodeStat *stat);
 
+    RT_RET              reallocOutputBuffers(INT32 wantSize, std::string streamType = "none");
+
     RT_RET              attachOutStreamPool(RTMediaBufferPool *pool, std::string streamType = "none");
     RT_RET              detachOutStreamPool(std::string streamType = "none");
+    RT_RET              pollOutputBuffer(RT_BOOL block = RT_TRUE,
+                                          UINT32 size = 0,
+                                          std::string streamType = "none");
 
     RT_RET              dump();
 

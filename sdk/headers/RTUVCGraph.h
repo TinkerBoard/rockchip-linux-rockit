@@ -83,6 +83,7 @@ class RTUVCGraph {
     void *getCtx() { return mCtx; }
     RT_RET selectLinkMode();
     RT_RET preload(RtMetaData *meta);
+    RT_RET invoke(INT32 cmd, void *data);
 
  private:
     RT_RET initialize();

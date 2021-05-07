@@ -47,6 +47,7 @@
 #define NODE_NAME_STASTERIA     "st_asteria"  // sensetime asteria
 #define NODE_NAME_AIMATTING     "ai_matting"
 #define NODE_NAME_GLPSS         "rkglpss"
+#define NODE_NAME_VPSS          "rkvpss"
 
 #define NODE_NAME_RESAMPLE      "resample"
 #define NODE_NAME_ALSA_CAPTURE  "alsa_capture"
@@ -70,6 +71,7 @@
 #define NODE_NAME_LINK_OUTPUT   "link_output"
 #define NODE_NAME_SOURCE_EXTERNAL  "external_source"
 #define NODE_NAME_AUDIO_DEC_FFMPEG  "audio_dec_ffmpeg"
+#define NODE_NAME_AUDIO_ENC_FFMPEG  "audio_enc_ffmpeg"
 
 #define NODE_PORT_SOURCE  "source"
 #define NODE_PORT_DEVICE  "device"
@@ -160,7 +162,9 @@
 #define OPT_VIDEO_TIME_REF               "opt_time_ref"
 #define OPT_VIDEO_COLOR                  "opt_color"
 #define OPT_VIDEO_SPLIT_MODE             "opt_split_mode"
+#define OPT_VIDEO_OUTPUT_MODE            "opt_output_mode"
 #define OPT_VIDEO_DROP_ERR_FRAME         "opt_drop_err_frame"
+#define OPT_VIDEO_NALU_TYPE              "opt_nalu_type"
 
 /* draw line in picture */
 #define OPT_LINE_START_X                 "opt_line_startx"
@@ -168,6 +172,13 @@
 #define OPT_LINE_END_X                   "opt_line_endx"
 #define OPT_LINE_END_Y                   "opt_line_endy"
 #define OPT_LINE_THICK                   "opt_line_thick"
+
+/* mosaic in picture */
+#define OPT_MOSAIC_X                     "opt_mosaic_x"
+#define OPT_MOSAIC_Y                     "opt_mosaic_y"
+#define OPT_MOSAIC_W                     "opt_mosaic_w"
+#define OPT_MOSAIC_H                     "opt_mosaic_h"
+#define OPT_MOSAIC_BLK_SIZE              "opt_mosaic_blk_size"
 
 // common parameters for codec audio. subnodes of KEY_ROOT_NODE_STREAM_OPTS
 #define OPT_AUDIO_CHANNEL                "opt_channel"
@@ -213,12 +224,15 @@
 #define OPT_AV_EOS                       "opt_av_eos"
 #define OPT_AV_ERR                       "opt_av_err"
 #define OPT_AV_DURATION                  "opt_av_duration"
+#define OPT_AV_TIMEOUT                   "opt_av_timeout"
+#define OPT_AV_BUF_STATUS                "opt_av_buf_status"
 
 #define OPT_CODEC_ID                     "opt_codec_id"
 #define OPT_CODEC_TYPE                   "opt_codec_type"
 #define OPT_CODEC_DEC_MODE               "opt_dec_mode"
 #define OPT_CODEC_EXT_DATA               "opt_ext_data"
 #define OPT_CODEC_EXT_SIZE               "opt_ext_size"
+#define OPT_CODEC_BITS_PER_SAMPLE        "opt_bits_per_sample"
 
 // define new option end here
 #define OPT_FILTER_WIDTH                 "opt_width"
@@ -227,6 +241,8 @@
 #define OPT_FILTER_VIR_HEIGHT            "opt_vir_height"
 #define OPT_FILTER_TRANS_RECT            "opt_trans_rect"
 #define OPT_FILTER_TRANS_ROTATE          "opt_trans_rotate"
+#define OPT_FILTER_MOSAIC                "opt_mosaic"
+
 #define OPT_FILTER_MD_DS_WIDTH           "opt_md_ds_width"
 #define OPT_FILTER_MD_DS_HEIGHT          "opt_md_ds_height"
 #define OPT_FILTER_MD_ORI_WIDTH          "opt_md_ori_width"
@@ -238,15 +254,19 @@
 #define OPT_FILTER_RECT_Y                "opt_rect_y"
 #define OPT_FILTER_RECT_W                "opt_rect_w"
 #define OPT_FILTER_RECT_H                "opt_rect_h"
+#define OPT_FILTER_RECT_MODE             "opt_rect_mode"
 #define OPT_FILTER_DST_RECT_X            "opt_dst_rect_x"
 #define OPT_FILTER_DST_RECT_Y            "opt_dst_rect_y"
 #define OPT_FILTER_DST_RECT_W            "opt_dst_rect_w"
 #define OPT_FILTER_DST_RECT_H            "opt_dst_rect_h"
+#define OPT_FILTER_DST_RECT_MODE         "opt_dst_rect_mode"
 #define OPT_FILTER_DST_VIR_WIDTH         "opt_dst_vir_width"
 #define OPT_FILTER_DST_VIR_HEIGHT        "opt_dst_vir_height"
 #define OPT_FILTER_DST_PIX_FORMAT        "opt_dst_pix_format"
 #define OPT_FILTER_COMPRESS              "opt_compress_mode"
 #define OPT_FILTER_DST_COMPRESS          "opt_dst_compress_mode"
+#define OPT_FILTER_FADE_RATE             "opt_fade_rate"
+
 
 #define OPT_V4L2_BUF_TYPE               "opt_buf_type"
 #define OPT_V4L2_MEM_TYPE               "opt_mem_type"
@@ -275,6 +295,7 @@
 #define OPT_AUDIO_ALGORITHM             "opt_audio_algorithm"
 
 #define OPT_EXEC_THREAD_NUM             "exec_thread_num"
+#define OPT_EXEC_THREAD_NAME            "exec_name"
 
 #define OPT_IO_STREAM_MODE              "opt_io_stream_mode"
 
@@ -353,15 +374,6 @@ typedef enum _RTStreamId {
     RT_STREAM_ID_3RD,
     RT_STREAM_ID_4TH,
 } RTStreamId;
-
-typedef enum _RTNodeType {
-    RT_NODE_TYPE_UNKNOW = 0,
-    RT_NODE_TYPE_DEVICE,
-    RT_NODE_TYPE_SOURCE,
-    RT_NODE_TYPE_CODEC,
-    RT_NODE_TYPE_FILTER,
-    RT_NODE_TYPE_SINK,
-} RTNodeType;
 
 typedef enum _RTStreamType {
     RT_STM_TYPE_UNKNOW,

@@ -32,7 +32,7 @@
 #include "rt_mutex.h"               // NOLINT
 
 enum RtMediaBufferStatus {
-    RT_MEDIA_BUFFER_STATUS_UNKONN = 0,
+    RT_MEDIA_BUFFER_STATUS_UNKNOWN = 0,
     RT_MEDIA_BUFFER_STATUS_UNUSED,
     RT_MEDIA_BUFFER_STATUS_READY,
     RT_MEDIA_BUFFER_STATUS_USING,
@@ -77,6 +77,7 @@ class RTMediaBuffer : public RTObject {
     explicit RTMediaBuffer(UINT32 size);
     explicit RTMediaBuffer(const RTMediaBuffer* data);
     virtual ~RTMediaBuffer();
+    RTMediaBuffer& operator = (const RTMediaBuffer &);
 
  public:
     // override RTObject methods
@@ -98,8 +99,9 @@ class RTMediaBuffer : public RTObject {
     INT32  getFd() const;
     INT32  getHandle() const;
     UINT32 getPhyAddr() const;
-    INT32  getUniqueID();
-    INT32  getPoolID();
+    INT32  getUniqueID() const;
+    INT32  getBufferSeq() const;
+    INT32  getPoolID() const;
 
     void   setData(void* data, UINT32 size);
     void   setListener(RTBufferListener* listener);
@@ -110,6 +112,7 @@ class RTMediaBuffer : public RTObject {
     void   setSite(RTMediaBufferSite site);
     void   setPrivateData(void *data);
     void   setBufferID(void *id);
+    void   setBufferSeq(INT32 seq);
     void   setFd(INT32 fd);
     void   setHandle(INT32 handle);
     void   setUniqueID(INT32 uniqueId);
@@ -159,6 +162,7 @@ class RTMediaBuffer : public RTObject {
     INT32           mRefCount;
     void           *mPrivateData;
     void           *mBufferID;
+    INT32           mBufferSeq;
     RT_BOOL         mRegistered;
     RTAllocator    *mAllocator;
     RtMutex        *mLock;

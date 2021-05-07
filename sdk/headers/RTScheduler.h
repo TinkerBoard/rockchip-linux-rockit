@@ -131,6 +131,7 @@ class RTScheduler {
     };
     std::atomic<State> mState = ATOMIC_VAR_INIT(STATE_NOT_STARTED);
     RtMutex     mStateMutex;
+    RtMutex     mThrottleMutex;
     RtCondition mStateCondition;
     // Queue of nodes that need to be run.
     RTSchedulerQueue mDefaultQueue;

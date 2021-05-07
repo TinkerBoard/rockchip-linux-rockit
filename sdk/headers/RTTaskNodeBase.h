@@ -30,15 +30,9 @@
 #include "RTNodeCommon.h"
 #include "RTStreamInfo.h"
 
-typedef struct outputStreamLinkMap {
-    int outputStreamIndex;
-    std::vector<int> linkIndexList;
-} outputStreamLinkMap;
-
 typedef struct _RTTaskNodeInfo {
-    int nodeId;
-    std::vector<int> inputList;
-    std::vector<outputStreamLinkMap> outputList;
+    INT32 nodeId;
+    std::string nodeName;
 } RTTaskNodeInfo;
 
 class RTBufferListener;
@@ -63,7 +57,7 @@ class RTTaskNodeBase {
     RtMetaData*         getOptions() { return mOptions; }
     RT_BOOL             isSource() const;
     RT_BOOL             isSink() const;
-    RT_BOOL             hasMirror() const;
+    RT_BOOL             hasMirror(RT_BOOL nodeOnly = RT_FALSE) const;
     INT32               numInputStreams() const;
     INT32               numOutputStreams() const;
 
@@ -89,7 +83,7 @@ class RTTaskNodeBase {
                          RTTaskNodeInfo        *nodeInfo,
                          RTInputStreamManager  *inputManager,
                          RTOutputStreamManager *outputManager);
-    RT_RET              initialize(int nodeId,
+    RT_RET              initialize(INT32 nodeId,
                          RTTaskNodeInfo *nodeInfo,
                          const std::vector<RTInputStreamManager *> &inputManagers,
                          const std::vector<RTOutputStreamManager *> &outputManagers);

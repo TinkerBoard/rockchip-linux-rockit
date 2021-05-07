@@ -22,10 +22,6 @@
 #ifndef INCLUDE_RT_PLAYER_RTMEDIAPLAYERINTERFACE_H_
 #define INCLUDE_RT_PLAYER_RTMEDIAPLAYERINTERFACE_H_
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include <sys/types.h>
 #include <inttypes.h>
 #include "rt_metadata.h"      // NOLINT
@@ -78,9 +74,5 @@ class RTMediaPlayerInterface {
     virtual rt_status setAudioSink(const void *audioSink) = 0;
     virtual rt_status setSubteSink(const void *subteSink) = 0;
 };
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif  // INCLUDE_RT_PLAYER_RTMEDIAPLAYERINTERFACE_H_

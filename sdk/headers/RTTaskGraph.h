@@ -62,6 +62,7 @@ typedef enum GraphIOStreamMode {
     DROP_IF_FULL,
 } RTGraphIOStreamMode;
 
+class RTTracePerf;
 class RTInputStreamManager;
 class RTOutputStreamManager;
 class RTTaskNode;
@@ -86,7 +87,7 @@ class RTTaskGraph {
     RT_RET      start();
     RT_RET      stop(RT_BOOL block = RT_TRUE);
     RT_RET      resume();
-    RT_RET      pause();
+    RT_RET      pause(RT_BOOL block = RT_FALSE);
     RT_RET      flush();
     RT_RET      release();
     RT_RET      invoke(INT32 cmd, RtMetaData *params);
@@ -108,6 +109,8 @@ class RTTaskGraph {
     RT_RET      cancelObserveOutputStream(INT32 streamId);
     RT_RET      addSubGraph(const char *graphConfigFile);
     RT_RET      removeSubGraph(const char *graphConfigFile);
+    RT_BOOL     hasMirror(INT32 nodeId, RT_BOOL nodeOnly = RT_FALSE);
+    RT_RET      setExternalExecutor(RTExecutor *executor);
 
  public:
     // external link graph api
@@ -209,7 +212,11 @@ class RTTaskGraph {
     RTScheduler         *mScheduler;
     RtMutex             *mLock;
     RTTaskGraphConfig   *mGraphConfig;
+    RTGraphIOStreamMode  mIoStreamMode;
+    INT64                mAddPacketCount;
+    RTTracePerf         *mTracePerf;
     std::map<INT32, RTExecutor *>                         mExecutors;
+    RTExecutor                                           *mExtExecutor;
     std::map<INT32/* node id */, RTTaskNode *>            mNodes;
     std::map<INT32, std::vector<RTInputStreamManager *>>  mFullInputStreams;
     std::map<INT32/* node id */, RTInputStreamManager *>  mInputManagers;

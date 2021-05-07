@@ -119,6 +119,7 @@ typedef enum {
      RT_AUDIO_ID_EVRC,        /**< Any variant of EVRC encoded data */
      RT_AUDIO_ID_SMV,         /**< Any variant of SMV encoded data */
      RT_AUDIO_ID_G729,        /**< Any variant of G.729 encoded data */
+     RT_AUDIO_ID_OPUS,        /**< Any variant of OPUS encoded data */
      RT_AUDIO_ID_AAC,         /**< Any variant of AAC encoded data */
      RT_AUDIO_ID_MP3,         /**< Any variant of MP3 encoded data */
      RT_AUDIO_ID_SBC,         /**< Any variant of SBC encoded data */
@@ -247,6 +248,8 @@ typedef enum _RTPixelFormat {
     RT_FMT_YUV440SP,                                   /* YYYY... UVUV...          */
     RT_FMT_YUV411SP,                                   /* YYYY... UV...            */
     RT_FMT_YUV444SP,                                   /* YYYY... UVUVUVUV...      */
+    RT_FMT_YUV422_YVYU,                                /* YVYUYVYU...              */
+    RT_FMT_YUV422_VYUY,                                /* VYUYVYUY...              */
     RT_FMT_YUV_BUTT,
 
     RT_FMT_RGB565          = RT_VIDEO_FMT_RGB,         /* 16-bit RGB               */
@@ -267,6 +270,10 @@ typedef enum _RTPixelFormat {
     RT_FMT_ABGR8565,                                   /* 24-bit RGB               */
     RT_FMT_ARGB8888,                                   /* 32-bit RGB               */
     RT_FMT_ABGR8888,                                   /* 32-bit RGB               */
+    RT_FMT_BGRA8888,                                   /* 32-bit RGB               */
+    RT_FMT_RGBA8888,                                   /* 32-bit RGB               */
+    RT_FMT_RGBA5551,                                   /* 16-bit RGB               */
+    RT_FMT_BGRA5551,                                   /* 16-bit RGB               */
     RT_FMT_RGB_BUTT,
 
     RT_FMT_BUTT            = RT_FMT_RGB_BUTT,
@@ -323,6 +330,13 @@ typedef enum _RTCompressMode {
 
     RT_COMPRESS_MODE_BUTT
 } RTCompressMode;
+
+typedef enum _RTVideoOutputMode {
+    RT_VIDEO_OUTPUT_ORDER_DISP = 0,
+    RT_VIDEO_OUTPUT_ORDER_DEC,
+
+    RT_VIDEO_OUTPUT_ORDER_BUTT
+} RTVideoOutputMode;
 
 typedef enum _RTDecMode {
     RT_DEC_MODE_FRAME = 0,   /* send by frame */
@@ -411,7 +425,7 @@ typedef struct _RTTrackInfor {
     INT32  mAudioChannels;
     INT32  mAudioSampleRate;
 
-    /* subtitle track features*/
+    /* subtitle track features */
 
     /* language */
     char    lang[16];
@@ -428,7 +442,6 @@ class RTMediaDef {
     static const char*       getClockName(UINT32 type);
     static INT32             getAudioBytesPerSample(INT32 format);
     static INT32             getFdFromString(const char* uri);
-    static RT_RET            getPixelFormatSize(INT32 format, INT32* num, INT32* den);
     static RT_RET            getUriFromFd(INT32 fd, char *uri);
     static RTVideoHDLevel    getVideoHDLevel(INT32 width, INT32 height);
     static RT_BOOL           checkFrameRate(float frameRate);

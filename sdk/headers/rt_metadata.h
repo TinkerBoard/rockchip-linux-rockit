@@ -21,8 +21,9 @@
 #define INCLUDE_RT_BASE_RT_METADATA_H_
 
 #include <stdint.h>
-#include "rt_type.h"  // NOLINT
-#include "rt_error.h" // NOLINT
+#include <map>
+#include "rt_type.h"   // NOLINT
+#include "rt_error.h"  // NOLINT
 
 class RtMetaData;
 typedef RT_RET (*RTMetaValueFree)(void *);
@@ -88,6 +89,7 @@ class RtMetaData {
 
  private:
     struct              typed_data;
+    std::map<UINT64, void *> mDataMaps;
     RTMetaDataContext  *mCtx;
 };
 

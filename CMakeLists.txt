@@ -7,7 +7,7 @@ option(USE_STASTERIA  "enable stasteria" OFF)
 if (${USE_STASTERIA})
     set(AI_CAMERA_CONF ${ROCKIT_FILE_CONFIGS}/aicamera_stasteria.json)
 else()
-    set(AI_CAMERA_CONF ${ROCKIT_FILE_CONFIGS}/aicamera_rockx.json)
+    set(AI_CAMERA_CONF ${ROCKIT_FILE_CONFIGS}/aicamera_uvc.json)
 endif()
 
 install(FILES ${AI_CAMERA_CONF} DESTINATION ../../oem/usr/share/aiserver/  RENAME  "aicamera.json")

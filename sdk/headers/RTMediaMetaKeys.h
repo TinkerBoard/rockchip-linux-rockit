@@ -67,6 +67,7 @@ enum {
     kKeyVCodecQP             = MKTAG('v', 'c', 'q', 'p'),  // INT32 encoder feature
     kKeyVCodecSurfaceCB      = MKTAG('v', 'c', 's', 'b'),  // void *
     kKeyVCodecRotation       = MKTAG('v', 'r', 't', 'e'),  // INT32
+    kKeyVCodecFlagExtractor  = MKTAG('v', 'c', 'f', 'e'),  // INT32
 
     /* audio track features*/
     kKeyACodecChanneLayout      = MKTAG('a', 'c', 'l', 't'),
@@ -100,7 +101,6 @@ enum {
     kKeyFrameSequence    = MKTAG('f', 's', 'e', 'q'),   // INT32 Frame Sequence
     kKeyDisplayW         = MKTAG('d', 'w', 'i', 'd'),   // INT32
     kKeyDisplayH         = MKTAG('d', 'h', 'e', 'i'),   // INT32
-    kKeyFrameColorFormat = MKTAG('f', 'c', 'f', 'm'),   // INT32
 
     /* RTPacket */
     kKeyPacketPtr        = MKTAG('a', 'v', 'p', 't'),   // AVPacket

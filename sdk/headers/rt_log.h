@@ -20,13 +20,15 @@
 #ifndef INCLUDE_RT_BASE_RT_LOG_H_
 #define INCLUDE_RT_BASE_RT_LOG_H_
 
-#include "rt_header.h"   // NOLINT
-#include <string.h>      // NOLINT
+#include "rt_header.h"  // NOLINT
+#include <stdarg.h>
+#include <string.h>
 
 #ifndef LOG_TAG
 #define LOG_TAG NULL
 #endif
 
+#define RT_LOG_PRINT      0   /* print                                */
 #define RT_LOG_FATAL      1   /* fatal error                          */
 #define RT_LOG_ERR        2   /* error conditions                     */
 #define RT_LOG_WARN       3   /* warning conditions                   */
@@ -42,6 +44,8 @@
 #define RT_LOGE_IF(condition, format, ...) if (condition > 0) LOG_ERROR(RT_LOG_ERR, format, ##__VA_ARGS__)
 
 //! super macro.
+#define RT_LOGP(format, ...) LOG_ERROR(RT_LOG_PRINT, format, ##__VA_ARGS__)
+#define RT_LOGF(format, ...) LOG_ERROR(RT_LOG_FATAL, format, ##__VA_ARGS__)
 #define RT_LOGE(format, ...) LOG_ERROR(RT_LOG_ERR, format, ##__VA_ARGS__)
 #define RT_LOGW(format, ...) LOG_TRACE(RT_LOG_WARN, format, ##__VA_ARGS__)
 #define RT_LOGI(format, ...) LOG_TRACE(RT_LOG_INFO, format, ##__VA_ARGS__)
@@ -75,11 +79,15 @@
 extern "C" {
 #endif
 
-void rt_set_log_level(INT32 level);
+INT32 rt_get_log_level();
+void  rt_set_log_level(INT32 level);
+
 void rt_log(INT32 level, const char *tag, const char *fmt, const char *fname,
                             const UINT16 row, ...);
 void rt_err(INT32 level, const char *tag, const char *fmt, const char *fname,
                             const UINT16 row, ...);
+void rt_log_va(INT32 level, const char *tag, const char *fmt, const char *fname,
+                            const UINT16 row, va_list args);
 
 #ifdef __cplusplus
 }

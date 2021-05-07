@@ -44,6 +44,10 @@ INT32 util_strcasecmp(const char* str1, const char* str2);
 INT32 util_strncasecmp(const char* str1, const char* str2, size_t n);
 INT32 util_strtolower(char* dst, const char* src, INT32 length);
 INT32 util_strtoupper(char* dst, const char* src, INT32 length);
+
+INT32 util_strlcpy(char *dst, const char *src, INT32 size);
+INT32 util_strlcat(char *dst, const char *src, INT32 size);
+
 INT32 util_dump_str(INT32 fd, const char* args);
 
 /**
