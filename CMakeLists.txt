@@ -2,6 +2,9 @@ project (rockit)
 cmake_minimum_required(VERSION 3.8)
 
 include(sdk/RockitConfig.cmake)
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(ROCKIT_FILE_CONFIGS ${ROCKIT_FILE_CONFIGS}/arch64) 
+endif()
 
 option(USE_STASTERIA  "enable stasteria" OFF)
 if (${USE_STASTERIA})
