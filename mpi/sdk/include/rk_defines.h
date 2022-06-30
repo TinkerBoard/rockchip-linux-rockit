@@ -18,6 +18,8 @@
 #ifndef INCLUDE_RT_MPI_RK_DEFINES_H_
 #define INCLUDE_RT_MPI_RK_DEFINES_H_
 
+/* Automatic generated [rk3588] config */
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -29,7 +31,7 @@ extern "C" {
 #define VENC_MAX_ROI_NUM               8
 
 /* For VDEC */
-#define VDEC_MAX_CHN_NUM               128
+#define VDEC_MAX_CHN_NUM               256
 
 /* For Region */
 #define RGN_MAX_HANDLE_NUM             128
@@ -50,7 +52,7 @@ extern "C" {
 
 /* For VO */
 #define VO_MAX_DEV_NUM                 4 /* max dev num */
-#define VO_MAX_LAYER_NUM               8 /* max layer num */
+#define VO_MAX_LAYER_NUM               12 /* max layer num */
 #define VO_MAX_CHN_NUM                 128 /* max chn num */
 #define VO_MAX_WBC_NUM                 1
 #define VO_MAX_BUF_NUM                 15
@@ -60,7 +62,7 @@ extern "C" {
 /* For AUDIO */
 #define AI_DEV_MAX_NUM                 2
 #define AI_MAX_CHN_NUM                 1
-#define AO_DEV_MAX_NUM                 2
+#define AO_DEV_MAX_NUM                 8
 #define AO_MAX_CHN_NUM                 3
 #define AENC_MAX_CHN_NUM               32
 #define ADEC_MAX_CHN_NUM               32
@@ -80,6 +82,10 @@ extern "C" {
 /* For TDE */
 #define TDE_MAX_JOB_NUM                128
 #define TDE_MAX_TASK_NUM               200
+
+/* For GDC */
+#define GDC_MAX_JOB_NUM                128
+#define GDC_MAX_TASK_NUM               200
 
 #ifdef __cplusplus
 #if __cplusplus

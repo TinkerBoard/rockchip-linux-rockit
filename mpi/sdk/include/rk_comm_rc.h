@@ -44,13 +44,16 @@ typedef enum rkVENC_RC_MODE_E {
     VENC_RC_MODE_H264CBR = 1,
     VENC_RC_MODE_H264VBR,
     VENC_RC_MODE_H264AVBR,
+    VENC_RC_MODE_H264FIXQP,
     // MJPEG
     VENC_RC_MODE_MJPEGCBR,
     VENC_RC_MODE_MJPEGVBR,
+    VENC_RC_MODE_MJPEGFIXQP,
     // H265
     VENC_RC_MODE_H265CBR,
     VENC_RC_MODE_H265VBR,
     VENC_RC_MODE_H265AVBR,
+    VENC_RC_MODE_H265FIXQP,
     VENC_RC_MODE_BUTT,
 } VENC_RC_MODE_E;
 
@@ -73,7 +76,8 @@ typedef struct rkVENC_H264_CBR_S {
     RK_U32 u32SrcFrameRateDen;
     RK_U32 fr32DstFrameRateNum;
     RK_U32 fr32DstFrameRateDen;
-    RK_U32 u32BitRate;  // RW; Range:[2, 98689]kbps; average bitrate
+    RK_U32 u32BitRate;     // RW; Range:[2, 200000]kbps; average bitrate; default : u32VirWidth*u32VirHeight/8*30;
+    RK_U32 u32StatTime;    // RW; Range:[1,60]second;default : 3
 } VENC_H264_CBR_S;
 
 /* the attribute of h264e vbr*/
@@ -83,7 +87,10 @@ typedef struct rkVENC_H264_VBR_S {
     RK_U32 u32SrcFrameRateDen;
     RK_U32 fr32DstFrameRateNum;
     RK_U32 fr32DstFrameRateDen;
-    RK_U32 u32BitRate;  // RW; Range:[2, 69905]kbps;the max bitrate: u32BitRate*3/2;the min bitrate: u32BitRate/2
+    RK_U32 u32BitRate;     // RW; Range:[2, 200000]kbps; average bitrate; default : u32VirWidth*u32VirHeight/8*30;
+    RK_U32 u32MaxBitRate;  // RW; Range:[u32BitRate, 200000]kbps; max bitrate; default : u32BitRate*3/2;
+    RK_U32 u32MinBitRate;  // RW; Range:[2, u32BitRate]kbps; min bitrate;; default : u32BitRate/2;
+    RK_U32 u32StatTime;    // RW; Range:[1,60]second;default : 3
 } VENC_H264_VBR_S;
 
 /* the attribute of h264e vbr*/
@@ -93,8 +100,23 @@ typedef struct rkVENC_H264_AVBR_S {
     RK_U32 u32SrcFrameRateDen;
     RK_U32 fr32DstFrameRateNum;
     RK_U32 fr32DstFrameRateDen;
-    RK_U32 u32BitRate;  // RW; Range:[2, 69905]kbps;the max bitrate: u32BitRate*3/2;the min bitrate: u32BitRate/2
+    RK_U32 u32BitRate;     // RW; Range:[2, 200000]kbps; average bitrate; default : u32VirWidth*u32VirHeight/8*30;
+    RK_U32 u32MaxBitRate;  // RW; Range:[u32BitRate, 200000]kbps; max bitrate; default : u32BitRate*3/2;
+    RK_U32 u32MinBitRate;  // RW; Range:[2, u32BitRate]kbps; min bitrate;; default : u32BitRate/2;
+    RK_U32 u32StatTime;    // RW; Range:[1,60]second;default : 3
 } VENC_H264_AVBR_S;
+
+/* the attribute of h264e fixqp*/
+typedef struct rkVENC_H264_FIXQP_S {
+    RK_U32 u32Gop;  // RW; Range:[1, 65536]; the interval of ISLICE.
+    RK_U32 u32SrcFrameRateNum;
+    RK_U32 u32SrcFrameRateDen;
+    RK_U32 fr32DstFrameRateNum;
+    RK_U32 fr32DstFrameRateDen;
+    RK_U32 u32IQp;  // RW; Range:[1, 51];
+    RK_U32 u32PQp;  // RW; Range:[1, 51];
+    RK_U32 u32BQp;  // reserved.
+} VENC_H264_FIXQP_S;
 
 /* the attribute of mjpege cbr*/
 typedef struct rkVENC_MJPEG_CBR_S {
@@ -102,7 +124,8 @@ typedef struct rkVENC_MJPEG_CBR_S {
     RK_U32 u32SrcFrameRateDen;
     RK_U32 fr32DstFrameRateNum;
     RK_U32 fr32DstFrameRateDen;
-    RK_U32 u32BitRate;  // RW; Range:[2000, 98000]kbps; average bitrate
+    RK_U32 u32BitRate;     // RW; Range:[5, 800000]kbps; average bitrate; default : u32VirWidth*u32VirHeight/8*30;
+    RK_U32 u32StatTime;    // RW; Range:[1,60]second;default : 3
 } VENC_MJPEG_CBR_S;
 
 /* the attribute of mjpege vbr*/
@@ -111,28 +134,44 @@ typedef struct rkVENC_MJPEG_VBR_S {
     RK_U32 u32SrcFrameRateDen;
     RK_U32 fr32DstFrameRateNum;
     RK_U32 fr32DstFrameRateDen;
-    RK_U32 u32BitRate;  // RW; Range:[2000, 98000]kbps; average bitrate
+    RK_U32 u32BitRate;      // RW; Range:[5, 800000]kbps; average bitrate; default : u32VirWidth*u32VirHeight/8*30;
+    RK_U32 u32MaxBitRate;   // RW; Range:[u32BitRate, 800000]kbps; max bitrate; default : u32BitRate*3/2;
+    RK_U32 u32MinBitRate;   // RW; Range:[5, u32BitRate]kbps; min bitrate;; default : u32BitRate/2;
+    RK_U32 u32StatTime;     // RW; Range:[1,60]second;default : 3
 } VENC_MJPEG_VBR_S;
+
+/* the attribute of mjpege fixqp*/
+typedef struct rkVENC_MJPEG_FIXQP_S {
+    RK_U32 u32SrcFrameRateNum;
+    RK_U32 u32SrcFrameRateDen;
+    RK_U32 fr32DstFrameRateNum;
+    RK_U32 fr32DstFrameRateDen;
+    RK_U32 u32Qfactor;  // RW; Range:[1, 99];
+} VENC_MJPEG_FIXQP_S;
 
 typedef struct rkVENC_H264_CBR_S VENC_H265_CBR_S;
 typedef struct rkVENC_H264_VBR_S VENC_H265_VBR_S;
 typedef struct rkVENC_H264_AVBR_S VENC_H265_AVBR_S;
+typedef struct rkVENC_H264_FIXQP_S VENC_H265_FIXQP_S;
 
 /* the attribute of rc*/
 typedef struct rkVENC_RC_ATTR_S {
     /* RW; the type of rc*/
     VENC_RC_MODE_E enRcMode;
     union {
-    VENC_H264_CBR_S stH264Cbr;
-    VENC_H264_VBR_S stH264Vbr;
-    VENC_H264_AVBR_S stH264Avbr;
+        VENC_H264_CBR_S stH264Cbr;
+        VENC_H264_VBR_S stH264Vbr;
+        VENC_H264_AVBR_S stH264Avbr;
+        VENC_H264_FIXQP_S stH264FixQp;
 
-    VENC_MJPEG_CBR_S stMjpegCbr;
-    VENC_MJPEG_VBR_S stMjpegVbr;
+        VENC_MJPEG_CBR_S stMjpegCbr;
+        VENC_MJPEG_VBR_S stMjpegVbr;
+        VENC_MJPEG_FIXQP_S stMjpegFixQp;
 
-    VENC_H265_CBR_S stH265Cbr;
-    VENC_H265_VBR_S stH265Vbr;
-    VENC_H265_AVBR_S stH265Avbr;
+        VENC_H265_CBR_S stH265Cbr;
+        VENC_H265_VBR_S stH265Vbr;
+        VENC_H265_AVBR_S stH265Avbr;
+        VENC_H265_FIXQP_S stH265FixQp;
     };
 } VENC_RC_ATTR_S;
 
@@ -145,8 +184,7 @@ typedef struct rkVENC_PARAM_H264_S {
     RK_U32 u32MaxIQp;  // RW; max qp for i frame
     RK_U32 u32MinIQp;  // RW; min qp for i frame,can not be larger than u32MaxIQp
     RK_S32 s32DeltIpQp;  // RW; Range:[-7, 7]; pppp..i delta qp between the mean of p and I
-    // RK_S32  s32MaxReEncodeTimes;        /* RW; Range:[0, 3]; Range:max number
-    // of re-encode times.*/
+    RK_S32 s32MaxReEncodeTimes;  // RW; Range:[0, 3]; Range:max number of re-encode times.
 } VENC_PARAM_H264_S;
 
 /* The param of h265e */
@@ -158,14 +196,14 @@ typedef struct rkVENC_PARAM_H265_S {
     RK_U32 u32MaxIQp;  // RW; max qp for i frame
     RK_U32 u32MinIQp;  // RW; min qp for i frame,can not be larger than u32MaxIQp
     RK_S32 s32DeltIpQp;  // RW; Range:[-7, 7]; pppp..i delta qp between the mean of p and I
-
-    // RK_S32  s32MaxReEncodeTimes;         /* RW; Range:[0, 3]; Range:max number
-    // of re-encode times.*/
+    RK_S32 s32MaxReEncodeTimes;  // RW; Range:[0, 3]; Range:max number of re-encode times.
 } VENC_PARAM_H265_S;
 
 /* The param of mjpege */
 typedef struct rkVENC_PARAM_MJPEG_S {
-    RK_U32 u32Qfactor;
+    RK_U32 u32Qfactor;     // RW; Range:[1, 99]; default : 70
+    RK_U32 u32MaxQfactor;  // RW; Range:[u32Qfactor, 99]; default : 99
+    RK_U32 u32MinQfactor;  // RW; Range:[1, u32Qfactor]; default : 30
 } VENC_PARAM_MJPEG_S;
 
 /* The param of rc */

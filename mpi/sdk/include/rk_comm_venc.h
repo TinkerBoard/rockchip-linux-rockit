@@ -372,6 +372,7 @@ typedef struct rkVENC_ATTR_H265_S {
 typedef struct rkVENC_ATTR_S {
     RK_CODEC_ID_E enType;
     PIXEL_FORMAT_E enPixelFormat;
+    MIRROR_E enMirror;  // mirror type
     RK_U32 u32BufSize;
     RK_U32 u32Profile;
     RK_BOOL bByFrame;
@@ -422,13 +423,18 @@ typedef struct rkVENC_CHN_STATUS_S {
     VENC_STREAM_INFO_S stVencStrmInfo;
 } VENC_CHN_STATUS_S;
 
-/* the param of the h264e slice split */
-typedef struct rkVENC_H264_SLICE_SPLIT_S {
+/* the param of the slice split */
+typedef struct rkVENC_SLICE_SPLIT_S {
     /* RW; Range:[0,1]; slice split enable, RK_TRUE:enable, RK_FALSE:diable, default value:RK_FALSE*/
     RK_BOOL bSplitEnable;
-    /* RW; the max number is (Picture height + 15)/16; this value presents the mb line number of one slice*/
-    RK_U32  u32MbLineNum;
-} VENC_H264_SLICE_SPLIT_S;
+    /* RW; this value presents slice split mode;0:slice is split by byte number;1:slice is split by mb/ctu number*/
+    RK_U32  u32SplitMode;
+    /* RW; this value presents the mb number of one slice;
+    * When u32SplitMode = 0 this value is the max byte number for each slice.
+    * When u32SplitMode = 1 this value is the MB/CTU number for each slice.
+    */
+    RK_U32  u32SplitSize;
+} VENC_SLICE_SPLIT_S;
 
 /* the param of the h264e intra pred */
 typedef struct rkVENC_H264_INTRA_PRED_S {
@@ -637,14 +643,6 @@ typedef struct rkVENC_STREAM_BUF_INFO_S {
     RK_U64  ATTRIBUTE u64BufSize[MAX_TILE_NUM];    /* R; Stream buffer size */
 } VENC_STREAM_BUF_INFO_S;
 
-/* the param of the h265e slice split */
-typedef struct rkVENC_H265_SLICE_SPLIT_S {
-    /* RW; Range:[0,1]; slice split enable, RK_TRUE:enable, RK_FALSE:diable, default value:RK_FALSE */
-    RK_BOOL bSplitEnable;
-    /* RW; Range:(Picture height + lcu size minus one)/lcu size;this value presents lcu line number */
-    RK_U32  u32LcuLineNum;
-} VENC_H265_SLICE_SPLIT_S;
-
 /* the param of the h265e pu */
 typedef struct rkVENC_H265_PU_S {
     RK_U32    constrained_intra_pred_flag;         /* RW; Range:[0,1]; see the H.265 protocol for the meaning. */
@@ -785,8 +783,8 @@ typedef struct rkUSER_RC_INFO_S {
     RK_BOOL bSkipWeightValid;
     /* RW; Range:[0,51];QP value of the first 16 x 16 block in QpMap mode */
     RK_U32  u32BlkStartQp;
-    RK_U64  u64QpMapPhyAddr;      /* RW; Physical address of the QP table in QpMap mode*/
-    RK_U64  u64SkipWeightPhyAddr; /* RW; Physical address of the SkipWeight table in QpMap mode*/
+    MB_BLK  pMbBlkQpMap;      /* RW; Blk of the QP table in QpMap mode*/
+    MB_BLK  pMbBlkSkipWeight; /* RW; Blk of the SkipWeight table in QpMap mode*/
     VENC_FRAME_TYPE_E enFrameType;/* RW; Encoding frame type of the current frame */
 } USER_RC_INFO_S;
 

@@ -30,6 +30,19 @@ extern "C" {
 #define MAX_AUDIO_FILE_PATH_LEN 256
 #define MAX_AUDIO_FILE_NAME_LEN 256
 
+/*
+ * G726 bitrate and bitdepth map:
+ *  bitrate :  16000  24000 32000 40000
+ * bit depth:    2     3     4      5
+ */
+typedef enum rkAUDIO_G726_BPS_E {
+    G726_BPS_16K   = 16000,     // 2bit
+    G726_BPS_24K   = 24000,     // 3bit
+    G726_BPS_32K   = 32000,     // 4bit
+    G726_BPS_40K   = 40000,     // 5bit
+    G726_BPS_BUTT,
+} AUDIO_G726_BPS;
+
 typedef enum rkAUDIO_SAMPLE_RATE_E {
     AUDIO_SAMPLE_RATE_DISABLE = 0,
     AUDIO_SAMPLE_RATE_8000   = 8000,    /* 8K samplerate*/
@@ -56,8 +69,10 @@ typedef struct rkAUDIO_STREAM_S {
 
 typedef enum rkAUDIO_BIT_WIDTH_E {
     AUDIO_BIT_WIDTH_8   = 0,   /* 8bit width */
-    AUDIO_BIT_WIDTH_16  = 1,   /* 16bit width*/
-    AUDIO_BIT_WIDTH_24  = 2,   /* 24bit width*/
+    AUDIO_BIT_WIDTH_16  = 1,   /* 16bit width */
+    AUDIO_BIT_WIDTH_24  = 2,   /* 24bit width */
+    AUDIO_BIT_WIDTH_32  = 3,   /* 32bit width */
+    AUDIO_BIT_WIDTH_FLT = 4,   /* float, 32bit width */
     AUDIO_BIT_WIDTH_BUTT,
 } AUDIO_BIT_WIDTH_E;
 
@@ -66,6 +81,12 @@ typedef enum rkAIO_SOUND_MODE_E {
     AUDIO_SOUND_MODE_STEREO = 1,/*stereo*/
     AUDIO_SOUND_MODE_BUTT
 } AUDIO_SOUND_MODE_E;
+
+typedef enum rkAUDIO_CHN_MODE_E {
+    AUDIO_CHN_MODE_LEFT   = 10,
+    AUDIO_CHN_MODE_RIGHT  = 11,
+    AUDIO_CHN_MODE_BUTT
+} AUDIO_CHN_MODE_E;
 
 typedef struct rkAUDIO_FRAME_S {
     MB_BLK              pMbBlk;
@@ -87,6 +108,16 @@ typedef struct rkAUDIO_FRAME_INFO_S {
     AUDIO_FRAME_S *pstFrame;/*frame ptr*/
     RK_U32         u32Id;   /*frame id*/
 } AUDIO_FRAME_INFO_S;
+
+typedef struct rkAUDIO_ADENC_PARAM_S {
+    RK_U8          *pu8InBuf;
+    RK_U32          u32InLen;
+    RK_U64          u64InTimeStamp;
+
+    RK_U8          *pu8OutBuf;
+    RK_U32          u32OutLen;
+    RK_U64          u64OutTimeStamp;
+} AUDIO_ADENC_PARAM_S;
 
 typedef enum rkAIO_MODE_E {
     AIO_MODE_I2S_MASTER  = 0,   /* AIO I2S master mode */
@@ -136,6 +167,10 @@ typedef struct rkAIO_ATTR_S {
 typedef struct rkAI_CHN_PARAM_S {
     RK_U32 u32UsrFrmDepth;
 } AI_CHN_PARAM_S;
+
+typedef struct rkAO_CHN_PARAM_S {
+    AUDIO_CHN_MODE_E  enMode;
+} AO_CHN_PARAM_S;
 
 typedef struct rkAO_CHN_STATE_S {
     RK_U32              u32ChnTotalNum;    /* total number of channel buffer */

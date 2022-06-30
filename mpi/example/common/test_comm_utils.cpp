@@ -32,7 +32,7 @@
 extern "C" {
 #endif
 #endif /* End of #ifdef __cplusplus */
-static RK_U32 gU32RkChip;
+static RKSocType gEnRkSocType;
 
 RK_U64 TEST_COMM_GetNowUs() {
     struct timespec time = {0, 0};
@@ -104,19 +104,20 @@ RK_S32 TEST_COMM_OpenFileUris(const char *pCfgFileUri, char **pFileUris, RK_U32 
     fseek(fp, 0, SEEK_SET);
 
     while (sReadLen = getline(&pLine, &sLen, fp) != -1) {
-        pBuffer = reinterpret_cast<char *>(malloc(strlen(pLine) + 1));
-        RK_S32 len = strlen(pLine);
-        snprintf(pBuffer, strlen(pLine), "%s", pLine);
+        RK_S32 len = strlen(pLine) + 1;
+        pBuffer = reinterpret_cast<char *>(malloc(len));
+        snprintf(pBuffer, len, "%s", pLine);
+
         while (len) {
-            if (pBuffer[len] == '\r') {
-                char *tmp = reinterpret_cast<char *>(malloc(strlen(pLine) - len + 1));
-                memcpy(tmp, &(pBuffer[len + 1]), strlen(pLine) - len);
-                memcpy(&(pBuffer[len]), tmp, strlen(pLine) - len);
-                free(tmp);
-            }
             len--;
+            if (pBuffer[len] == '\r') {
+                pBuffer[len] = '\0';
+                break;
+            }
         }
         pFileUris[u32Count] = pBuffer;
+        free(pLine);
+        sLen = RK_NULL;
 
         RK_LOGV("url %s", pFileUris[u32Count]);
         u32Count++;
@@ -271,6 +272,40 @@ RK_S32 TEST_COMM_CheckFileSizeInRange(const char *pFilePath,
         RK_LOGE("can't determine size of %s: %s!", pFilePath, strerror(errno));
         return RK_FAILURE;
     }
+}
+
+RKSocType TEST_COMM_GetSocType() {
+    char achBuf[1024] = "";
+    FILE *fd = NULL;
+    RKSocType socType = RK_SOC_1126;
+
+    if (gEnRkSocType)
+        return gEnRkSocType;
+
+    fd = fopen("/proc/device-tree/compatible", "r");
+    memset(achBuf, 0, sizeof(achBuf));
+    if (fd != NULL) {
+        fread(achBuf, 1, sizeof(achBuf), fd);
+        if ((strstr(achBuf, "rockchip")) ||
+            (strstr(achBuf, "Rockchip")) ||
+            (strstr(achBuf, "RK30board"))) {
+            if (strstr(achBuf, "1126") || (strstr(achBuf, "1109")))
+                socType = RK_SOC_1126;
+            else if (strstr(achBuf, "3566") || (strstr(achBuf, "3568")))
+                socType = RK_SOC_3568;
+            else if (strstr(achBuf, "3588"))
+                socType = RK_SOC_3588;
+        } else {
+            RK_LOGE("not match rockchips device.");
+        }
+        fclose(fd);
+    } else {
+        RK_LOGE("open failed.");
+    }
+    gEnRkSocType = socType;
+    RK_LOGD("get the rkchip:%d.", socType);
+
+    return socType;
 }
 
 #ifdef __cplusplus

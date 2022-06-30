@@ -21,6 +21,7 @@ extern "C" {
 
 #include <pthread.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "test_comm_vpss.h"
 #include "test_comm_imgproc.h"
@@ -29,6 +30,7 @@ extern "C" {
 #include "rk_mpi_cal.h"
 #include "rk_mpi_mb.h"
 #include "rk_mpi_mmz.h"
+#include "rk_mpi_sys.h"
 #include "rk_comm_vpss.h"
 #include "rk_common.h"
 #include "rk_debug.h"
@@ -39,6 +41,7 @@ typedef struct test_vpss_proc_s {
      FILE *dstSaveFp;
      VPSS_GRP VpssGrp;
      RK_U32 u32VpssChnNum;
+     RK_U32 u32SendFrameRate;
      pthread_t VpssProcPid;
      TEST_VPSS_PROC_CTX_S stProcCtx;
 } TEST_VPSS_PROC_S;
@@ -257,6 +260,7 @@ void* TEST_VPSS_Proc(void *pArgs) {
                 break;
             }
         }
+        RK_MPI_SYS_MmzFlushCache(srcBlk, RK_FALSE);
         frameIn.stVFrame.pMbBlk = srcBlk;
         frameIn.stVFrame.u32Width = pstCtx->stProcCtx.u32RawWidth;
         frameIn.stVFrame.u32Height = pstCtx->stProcCtx.u32RawHeight;
@@ -274,14 +278,17 @@ void* TEST_VPSS_Proc(void *pArgs) {
         for (RK_S32 i = 0; i < pstCtx->u32VpssChnNum; i++) {
             s32Ret = RK_MPI_VPSS_GetChnFrame(pstCtx->VpssGrp, i, &frameOut, -1);
             if (s32Ret != RK_SUCCESS) {
-                break;
+                continue;
             }
             RK_LOGI("get chn[%d] frame %p length %d", i, frameOut.stVFrame.pMbBlk, stMbPicCalResult.u32MBSize);
             if (pstCtx->dstSaveFp != RK_NULL) {
+                RK_MPI_SYS_MmzFlushCache(frameOut.stVFrame.pMbBlk, RK_TRUE);
                 fwrite(RK_MPI_MB_Handle2VirAddr(frameOut.stVFrame.pMbBlk),
                         1, stMbPicCalResult.u32MBSize, pstCtx->dstSaveFp);
                 fflush(pstCtx->dstSaveFp);
             }
+            RK_MPI_VPSS_ReleaseChnFrame(pstCtx->VpssGrp, i, &frameOut);
+            usleep(1000000 / pstCtx->u32SendFrameRate);
         }
     }
 
@@ -313,6 +320,7 @@ RK_S32 TEST_VPSS_StartProc(
     gProcThread[VpssGrp].bThreadStart = RK_TRUE;
     gProcThread[VpssGrp].VpssGrp = VpssGrp;
     gProcThread[VpssGrp].u32VpssChnNum = u32ChnNum;
+    gProcThread[VpssGrp].u32SendFrameRate = pstProcCtx->u32SendFrameRate;
 
     s32Ret = pthread_create(&(gProcThread[VpssGrp].VpssProcPid), 0,
                             TEST_VPSS_Proc, (RK_VOID *)&(gProcThread[VpssGrp]));

@@ -30,7 +30,7 @@ extern "C" {
 #endif /* End of #ifdef __cplusplus */
 
 #define AVS_MAX_GRP_NUM          32
-#define AVS_PIPE_NUM             6
+#define AVS_PIPE_NUM             8
 #define AVS_MAX_CHN_NUM          2
 #define AVS_SPLIT_NUM            2
 #define AVS_SPLIT_PIPE_NUM       6
@@ -48,8 +48,9 @@ extern "C" {
 #define MAX_AVS_FILE_PATH_LEN    256
 
 typedef enum rkAVS_LUT_ACCURAY_E {
-    AVS_LUT_ACCURACY_HIGH = 0,    /* LUT high accuracy. */
-    AVS_LUT_ACCURACY_LOW  = 1,    /* LUT low accuracy. */
+    AVS_LUT_ACCURACY_HIGH    = 0,    /* LUT high accuracy. */
+    AVS_LUT_ACCURACY_MEDIUM  = 1,    /* LUT Medium accuracy. */
+    AVS_LUT_ACCURACY_LOW     = 2,    /* LUT low accuracy. */
 
     AVS_LUT_ACCURACY_BUTT
 } AVS_LUT_ACCURAY_E;
@@ -59,11 +60,19 @@ typedef struct rkAVS_LUT_S {
     RK_CHAR aFilePath[MAX_AVS_FILE_PATH_LEN];
 } AVS_LUT_S;
 
+typedef struct rkAVS_CALIB_S {
+    RK_CHAR aMiddelLutPath[MAX_AVS_FILE_PATH_LEN];
+    RK_CHAR aCalibFilePath[MAX_AVS_FILE_PATH_LEN];
+    RK_CHAR aMaskFilePath[MAX_AVS_FILE_PATH_LEN];
+    RK_CHAR aMeshAlphaPath[MAX_AVS_FILE_PATH_LEN];
+} AVS_CALIB_S;
+
 typedef enum rkAVS_PROJECTION_MODE_E {
-    AVS_PROJECTION_EQUIRECTANGULAR  = 0,  /* Equirectangular mode. */
-    AVS_PROJECTION_RECTILINEAR      = 1,  /* Rectilinear mode. */
-    AVS_PROJECTION_CYLINDRICAL      = 2,  /* Cylindrical mode. */
-    AVS_PROJECTION_CUBE_MAP         = 3,  /* Cube map mode. */
+    AVS_PROJECTION_EQUIRECTANGULAR       = 0,  /* Equirectangular mode. */
+    AVS_PROJECTION_RECTILINEAR           = 1,  /* Rectilinear mode. */
+    AVS_PROJECTION_CYLINDRICAL           = 2,  /* Cylindrical mode. */
+    AVS_PROJECTION_CUBE_MAP              = 3,  /* Cube map mode. */
+    AVS_PROJECTION_EQUIRECTANGULAR_TRANS = 4,  /* Transvers Equirectangular  mode. */
 
     AVS_PROJECTION_BUTT
 } AVS_PROJECTION_MODE_E;
@@ -119,6 +128,7 @@ typedef struct rkAVS_CUBE_MAP_ATTR_S {
 
 typedef struct rkAVS_OUTPUT_ATTR_S {
     AVS_PROJECTION_MODE_E    enPrjMode;                  /* RW; Projection mode. */
+    AVS_CALIB_S              stCalib;                    /* Calib file path*/
     POINT_S                  stCenter;                   /* Center point. */
     AVS_FOV_S                stFOV;                      /* Output FOV. */
     AVS_ROTATION_S           stORIRotation;              /* Output original rotation. */
@@ -145,10 +155,12 @@ typedef struct rkAVS_CHN_ATTR_S {
     DYNAMIC_RANGE_E     enDynamicRange;     /* RW; Dynamic range. */
     RK_U32              u32Depth;           /* RW; Chn user list depth. */
     FRAME_RATE_CTRL_S   stFrameRate;        /* Frame rate control info. */
+    RK_U32              u32FrameBufCnt;     /* RW; frame buffer cnt only used by MB_SOURCE_PRIVATE */
 } AVS_CHN_ATTR_S;
 
 typedef struct rkAVS_MOD_PARAM_S {
     RK_U32 u32WorkingSetSize;               /* RW; AVS work */
+    MB_SOURCE_E enMBSource;                 /* RW; AVS MB pool source type */
 } AVS_MOD_PARAM_S;
 
 #define RK_AVS_OK                   RK_SUCCESS

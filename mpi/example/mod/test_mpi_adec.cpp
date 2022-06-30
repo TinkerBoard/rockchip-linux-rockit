@@ -95,9 +95,9 @@ RK_S32 test_init_mpi_adec(TEST_ADEC_CTX_S *params) {
     ADEC_CHN AdChn = (ADEC_CHN)(params->s32ChnIndex);
     memset(&stAdecAttr, 0, sizeof(ADEC_CHN_ATTR_S));    
 
-    if (stAdecAttr.stAdecCodec.u32Channels == 0) {
-        stAdecAttr.stAdecCodec.u32Channels = params->s32Channel;
-        stAdecAttr.stAdecCodec.u32SampleRate = params->s32SampleRate;
+    if (stAdecAttr.stCodecAttr.u32Channels == 0) {
+        stAdecAttr.stCodecAttr.u32Channels = params->s32Channel;
+        stAdecAttr.stCodecAttr.u32SampleRate = params->s32SampleRate;
     }
 
     RK_U32 codecId = test_find_audio_codec_id(params);
@@ -108,8 +108,6 @@ RK_S32 test_init_mpi_adec(TEST_ADEC_CTX_S *params) {
     stAdecAttr.enType = (RK_CODEC_ID_E)codecId;
     stAdecAttr.enMode = (ADEC_MODE_E)params->s32DecMode;
     stAdecAttr.u32BufCount = 4;
-    stAdecAttr.extraDataSize = 0;
-    stAdecAttr.extraData = RK_NULL;
 
     s32ret = RK_MPI_ADEC_CreateChn(AdChn, &stAdecAttr);
     if (s32ret) {

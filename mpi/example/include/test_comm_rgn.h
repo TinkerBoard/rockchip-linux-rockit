@@ -26,12 +26,39 @@ extern "C" {
 #endif
 #endif /* End of #ifdef __cplusplus */
 
+RK_S32 TEST_RGN_CreateOverlayAndAttach(
+        RGN_HANDLE RgnHandle, RK_U32 u32Width, RK_U32 u32Height,
+        PIXEL_FORMAT_E enFmt, const MPP_CHN_S *pstChn, RK_U32 u32ChnNum);
+
+RK_S32 TEST_RGN_CreateCoverAndAttach(
+        RGN_HANDLE RgnHandle, const COVER_CHN_ATTR_S *pstCoverAttr,
+        const MPP_CHN_S *pstChn, RK_U32 u32ChnNum);
+
+RK_S32 TEST_RGN_CreateMosaicAndAttach(
+        RGN_HANDLE RgnHandle, const MOSAIC_CHN_ATTR_S *pstMosaicAttr,
+        const MPP_CHN_S *pstChn, RK_U32 u32ChnNum);
+
+RK_S32 TEST_RGN_CreateLineAndAttach(
+        RGN_HANDLE RgnHandle, const LINE_CHN_ATTR_S *pstLineAttr,
+        const MPP_CHN_S *pstChn, RK_U32 u32ChnNum);
+
+RK_S32 TEST_RGN_DestroyAndDetach(
+        RGN_HANDLE RgnHandle, const MPP_CHN_S *pstChn, RK_U32 u32ChnNum);
+
 RK_S32 TEST_RGN_ChangePosition(
         RGN_HANDLE RgnHandle, const MPP_CHN_S *pstChn, RK_S32 s32X, RK_S32 s32Y);
 
 RK_S32 TEST_RGN_ShowOrHide(RGN_HANDLE RgnHandle, const MPP_CHN_S *pstChn, RK_BOOL bShow);
 
+RK_S32 TEST_RGN_ChangeAlpha(
+        RGN_HANDLE RgnHandle, const MPP_CHN_S *pstChn, RK_U32 u32FgAlpha, RK_U32 u32BgAlpha);
+
+RK_S32 TEST_RGN_ChangeColor(
+        RGN_HANDLE RgnHandle, const MPP_CHN_S *pstChn, RK_U32 u32Color);
+
 RK_S32 TEST_RGN_LoadBmp(const RK_CHAR *filename, BITMAP_S *pstBitmap, PIXEL_FORMAT_E enBmpFmt);
+
+RK_S32 TEST_RGN_CreateBmp(RK_U32 u32Width, RK_U32 u32Height, PIXEL_FORMAT_E enBmpFmt, BITMAP_S *pstBitmap);
 
 #ifdef __cplusplus
 #if __cplusplus

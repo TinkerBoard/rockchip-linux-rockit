@@ -67,14 +67,13 @@ typedef enum rkTDE_ALUCMD_E {
 /* Structure of the bitmap information set by customers */
 typedef struct rkTDE_SURFACE_S {
     MB_BLK pMbBlk;/* <Header address of a bitmap or the Y component */
-
     PIXEL_FORMAT_E enColorFmt; /* <Color format */
-
     RK_U32 u32Height; /* <Bitmap height */
-
     RK_U32 u32Width; /* <Bitmap width */
-
     COMPRESS_MODE_E enComprocessMode; /* compress type */
+    RK_BOOL bAlphaExt1555;  /* <Whether to enable the alpha extension of an ARGB1555 bitmap. */
+    RK_U8 u8Alpha0;  /* <Values of alpha0 and alpha1, used as the ARGB1555 format */
+    RK_U8 u8Alpha1;  /* <Values of alpha0 and alpha1, used as the ARGB1555 format */
 } TDE_SURFACE_S;
 
 /* Definition of the TDE rectangle */

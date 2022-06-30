@@ -43,8 +43,8 @@ typedef RK_U32 RGN_HANDLE;
 #define RGN_COVER_MAX_WIDTH            8192
 #define RGN_COVER_MAX_HEIGHT           8192
 
-#define RGN_OVERLAY_MIN_X              0
-#define RGN_OVERLAY_MIN_Y              0
+#define RGN_OVERLAY_MIN_X              -8192
+#define RGN_OVERLAY_MIN_Y              -8192
 #define RGN_OVERLAY_MAX_X              8192
 #define RGN_OVERLAY_MAX_Y              8192
 #define RGN_OVERLAY_MAX_WIDTH          8192
@@ -59,11 +59,19 @@ typedef RK_U32 RGN_HANDLE;
 #define RGN_MOSAIC_MAX_WIDTH           8192
 #define RGN_MOSAIC_MAX_HEIGHT          8192
 
+#define RGN_LINE_MIN_X                 0
+#define RGN_LINE_MIN_Y                 0
+#define RGN_LINE_MAX_X                 8192
+#define RGN_LINE_MAX_Y                 8192
+#define RGN_LINE_MIN_THICK             1
+#define RGN_LINE_MAX_THICK             32
+
 /* type of video regions */
 typedef enum rkRGN_TYPE_E {
     OVERLAY_RGN = 0,     /* video overlay region */
     COVER_RGN,
     MOSAIC_RGN,
+    LINE_RGN,
     RGN_BUTT
 } RGN_TYPE_E;
 
@@ -113,13 +121,29 @@ typedef struct rkOVERLAY_CHN_ATTR_S {
     OVERLAY_QP_INFO_S stQpInfo;
 } OVERLAY_CHN_ATTR_S;
 
+typedef struct rkRGN_QUADRANGLE_S {
+    RK_BOOL bSolid;
+    RK_U32 u32Thick;
+    POINT_S stPoint[4];
+} RGN_QUADRANGLE_S;
+
 typedef enum rkRGN_COORDINATE_E {
     RGN_ABS_COOR = 0,   /*Absolute coordinate*/
     RGN_RATIO_COOR      /*Ratio coordinate*/
 } RGN_COORDINATE_E;
 
+typedef enum rkRGN_AREA_TYPE_E {
+    AREA_RECT = 0,
+    AREA_QUAD_RANGLE,
+    AREA_BUTT
+} RGN_COVER_TYPE_E;
+
 typedef struct rkCOVER_CHN_ATTR_S {
-    RECT_S stRect;                          /* config of rect */
+    RGN_COVER_TYPE_E enCoverType;
+    union {
+        RECT_S stRect;                      /* config of rect */
+        RGN_QUADRANGLE_S stQuadRangle;
+    };
     RK_U32 u32Color;                        /* RGB888 format */
     RK_U32 u32Layer;                        /* COVER region layer */
     RGN_COORDINATE_E enCoordinate;          /* ratio coordiante or abs coordinate */
@@ -139,6 +163,13 @@ typedef struct rkMOSAIC_CHN_ATTR_S {
     RK_U32 u32Layer;               /*MOSAIC region layer range:[0,3] */
 } MOSAIC_CHN_ATTR_S;
 
+typedef struct rkLINE_CHN_ATTR_S {
+    RK_U32 u32Thick;
+    RK_U32 u32Color;
+    POINT_S stStartPoint;
+    POINT_S stEndPoint;
+} LINE_CHN_ATTR_S;
+
 typedef union rkRGN_ATTR_U {
     OVERLAY_ATTR_S      stOverlay;      /* attribute of overlay region */
 } RGN_ATTR_U;
@@ -146,7 +177,8 @@ typedef union rkRGN_ATTR_U {
 typedef union rkRGN_CHN_ATTR_U {
     OVERLAY_CHN_ATTR_S      stOverlayChn;      /* attribute of overlay region */
     COVER_CHN_ATTR_S        stCoverChn;        /* attribute of cover region */
-    MOSAIC_CHN_ATTR_S       stMosaicChn;       /* attribute of mosic region */
+    MOSAIC_CHN_ATTR_S       stMosaicChn;       /* attribute of mosaic region */
+    LINE_CHN_ATTR_S         stLineChn;         /* attribute of draw line region */
 } RGN_CHN_ATTR_U;
 
 /* attribute of a region */

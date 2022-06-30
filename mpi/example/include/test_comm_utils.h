@@ -70,6 +70,13 @@ typedef enum _RTUriSchemeType {
     RK_URI_SCHEME_IPTV,
 } URI_SCHEME_TYPE;
 
+typedef enum _RKSocType {
+    RK_SOC_UNKOWN = 0,
+    RK_SOC_1126,
+    RK_SOC_3568,
+    RK_SOC_3588
+} RKSocType;
+
 RK_U64 TEST_COMM_GetNowUs();
 URI_SCHEME_TYPE TEST_COMM_GetUriSchemeType(const char* uri);
 RK_S32 TEST_COMM_OpenFileUris(const char *pCfgFileUri, char **pFileUris, RK_U32 u32UriCount);
@@ -79,6 +86,7 @@ RK_S32 TEST_COMM_CheckFileSizeInRange(const char *pFilePath, RK_S32 minSize, RK_
 
 RK_S32 TEST_COMM_FileReadOneFrame(const char *pFileName, VIDEO_FRAME_INFO_S *pstVideoFrame);
 RK_S32 TEST_COMM_FileWriteOneFrame(const char *pFileName, VIDEO_FRAME_INFO_S *pstVideoFrame);
+RKSocType TEST_COMM_GetSocType();
 
 #ifdef __cplusplus
 #if __cplusplus

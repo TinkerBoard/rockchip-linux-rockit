@@ -37,36 +37,38 @@ static void get_rgb_color(RK_U32 *R, RK_U32 *G, RK_U32 *B, RK_S32 x, RK_S32 y, R
 }
 
 static void fill_MPP_FMT_RGB565(RK_U8 *p, RK_U32 R, RK_U32 G, RK_U32 B, RK_U32 be) {
-    RK_U8 r1, g1, b1, a1;
-    RK_U16 *u16p = reinterpret_cast<RK_U16 *>(p);
-
-    a1 = 1;
-    r1 = g1 = b1 = 0;
-    r1 = R >> 3;
-    g1 = G >> 2;
-    b1 = B >> 3;
-
+    // MPP_FMT_RGB565 = ffmpeg: rgb565be
+    // 16 bit pixel     MSB  -------->  LSB
+    //                 (rrrr,rggg,gggb,bbbb)
+    // big    endian   |  byte 0 |  byte 1 |
+    // little endian   |  byte 1 |  byte 0 |
+    RK_U16 val = (((R >> 3) & 0x1f) << 11) |
+                 (((G >> 2) & 0x3f) <<  5) |
+                 (((B >> 3) & 0x1f) <<  0);
     if (be) {
-        *u16p = r1 | (g1 << 5) | (b1 << 11);
+        p[0] = (val >> 8) & 0xff;
+        p[1] = (val >> 0) & 0xff;
     } else {
-        *u16p = (r1 << 11) | (g1 << 5) | b1;
+        p[0] = (val >> 0) & 0xff;
+        p[1] = (val >> 8) & 0xff;
     }
 }
 
 static void fill_MPP_FMT_BGR565(RK_U8 *p, RK_U32 R, RK_U32 G, RK_U32 B, RK_U32 be) {
-    RK_U8 r1, g1, b1, a1;
-    RK_U16 *u16p = reinterpret_cast<RK_U16 *>(p);
-
-    a1 = 1;
-    r1 = g1 = b1 = 0;
-    r1 = R >> 3;
-    g1 = G >> 2;
-    b1 = B >> 3;
-
+    // MPP_FMT_BGR565 = ffmpeg: bgr565be
+    // 16 bit pixel     MSB  -------->  LSB
+    //                 (bbbb,bggg,gggr,rrrr)
+    // big    endian   |  byte 0 |  byte 1 |
+    // little endian   |  byte 1 |  byte 0 |
+    RK_U16 val = (((R >> 3) & 0x1f) <<  0) |
+                 (((G >> 2) & 0x3f) <<  5) |
+                 (((B >> 3) & 0x1f) << 11);
     if (be) {
-        *u16p = b1 | (g1 << 5) | (r1 << 11);
+        p[0] = (val >> 8) & 0xff;
+        p[1] = (val >> 0) & 0xff;
     } else {
-        *u16p = (b1 << 11) | (g1 << 5) | r1;
+        p[0] = (val >> 0) & 0xff;
+        p[1] = (val >> 8) & 0xff;
     }
 }
 
@@ -358,6 +360,23 @@ static void fill_MPP_FMT_ABGR4444(RK_U8 *p, RK_U32 R, RK_U32 G, RK_U32 B, RK_U32
     }
 }
 
+static void fill_MPP_FMT_BGRA4444(RK_U8 *p, RK_U32 R, RK_U32 G, RK_U32 B, RK_U32 be) {
+    RK_U8 r1, g1, b1, a1;
+    RK_U16 *u16p = reinterpret_cast<RK_U16 *>(p);
+
+    a1 = 0xf;
+    r1 = g1 = b1 = 0;
+    r1 = R >> 4;
+    g1 = G >> 4;
+    b1 = B >> 4;
+
+    if (be) {
+        *u16p = b1 | (g1 << 4) | (r1 << 8) | (a1 << 12);
+    } else {
+        *u16p = (b1 << 12) + (g1 << 8) | (r1 << 4) | a1;
+    }
+}
+
 static void fill_MPP_FMT_RGBA5551(RK_U8 *p, RK_U32 R, RK_U32 G, RK_U32 B, RK_U32 be) {
     RK_U8 r1, g1, b1, a1;
     RK_U16 *u16p = reinterpret_cast<RK_U16 *>(p);
@@ -417,7 +436,8 @@ FillRgbFunc fill_rgb_funcs[] = {
     fill_MPP_FMT_BGRA8888,
     fill_MPP_FMT_RGBA8888,
     fill_MPP_FMT_RGBA5551,
-    fill_MPP_FMT_BGRA5551
+    fill_MPP_FMT_BGRA5551,
+    fill_MPP_FMT_BGRA4444
 };
 
 static RK_S32 util_check_stride_by_pixel(RK_S32 workaround, RK_S32 width,
@@ -640,7 +660,8 @@ RK_S32 TEST_COMM_FillImage(RK_U8 *buf, RK_U32 width, RK_U32 height,
     case RK_FMT_RGBA5551 :
     case RK_FMT_BGRA5551 :
     case RK_FMT_ARGB4444 :
-    case RK_FMT_ABGR4444 : {
+    case RK_FMT_ABGR4444 :
+    case RK_FMT_BGRA4444 : {
         RK_U8 *p = buf_y;
         RK_U32 pix_w = 2;
         FillRgbFunc fill = fill_rgb_funcs[fmt - RK_VIDEO_FMT_RGB];

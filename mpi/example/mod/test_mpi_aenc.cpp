@@ -126,12 +126,10 @@ RK_S32 test_init_mpi_aenc(TEST_AENC_CTX_S *params) {
     }
 
     stAencAttr.enType = (RK_CODEC_ID_E)codecId;
-    stAencAttr.stAencCodec.u32Channels = params->s32Channel;
-    stAencAttr.stAencCodec.u32SampleRate = params->s32SampleRate;
-    stAencAttr.stAencCodec.enBitwidth = (AUDIO_BIT_WIDTH_E)format;
+    stAencAttr.stCodecAttr.u32Channels = params->s32Channel;
+    stAencAttr.stCodecAttr.u32SampleRate = params->s32SampleRate;
+    stAencAttr.stCodecAttr.enBitwidth = (AUDIO_BIT_WIDTH_E)format;
     stAencAttr.u32BufCount = 4;
-    stAencAttr.extraDataSize = 0;
-    stAencAttr.extraData = RK_NULL;
 
     s32ret = RK_MPI_AENC_CreateChn(AdChn, &stAencAttr);
     if (s32ret) {

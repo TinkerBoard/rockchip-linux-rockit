@@ -29,7 +29,7 @@
 #include "rk_mpi_sys.h"
 #include "rk_mpi_mb.h"
 #include "rk_mpi_cal.h"
-
+#include "rk_mpi_vo.h"
 #include "test_comm_argparse.h"
 #include "test_comm_utils.h"
 
@@ -425,7 +425,25 @@ static void* mpi_send_stream(void *pArgs) {
         memset(data, 0, ctx->u32ReadSize);
         s32Size = fread(data, 1, ctx->u32ReadSize, fp);
         if (s32Size <= 0) {
-            s32ReachEOS = 1;
+            if (ctx->s32LoopCount--) {
+                mpi_vdec_free(data);
+                s32ReachEOS = 0;
+                fseek(fp, 0, SEEK_SET);
+                RK_LOGI("ctx->s32LoopCount = %d",ctx->s32LoopCount);
+                if (ctx->u32ChnIndex) {
+                    for (int i = 0; i < ctx->u32ChNum; i++) {
+                        VO_CHN_ATTR_S stChnAttr;
+                        RK_MPI_VO_GetChnAttr(0, i, &stChnAttr);
+                        if (ctx->s32LoopCount % 2)
+                            stChnAttr.u32Priority = ctx->u32ChNum - i;
+                        else
+                            stChnAttr.u32Priority = i;
+                        RK_MPI_VO_SetChnAttr(0, i, &stChnAttr);
+                    }
+                }
+                continue;
+            } else
+               s32ReachEOS = 1; 
         }
 
         memset(&pstMbExtConfig, 0, sizeof(MB_EXT_CONFIG_S));
@@ -455,7 +473,7 @@ __RETRY:
         } else {
             s32PacketCount++;
             RK_MPI_MB_ReleaseMB(stStream.pMbBlk);
-            RK_LOGI("send chn %d packet %d", ctx->u32ChnIndex, s32PacketCount);
+            //RK_LOGI("send chn %d packet %d", ctx->u32ChnIndex, s32PacketCount);
         }
         if (s32ReachEOS) {
             RK_LOGI("chn %d input reach EOS", ctx->u32ChnIndex);
@@ -470,8 +488,93 @@ __RETRY:
     return RK_NULL;
 }
 
+static RK_S32 create_vo(RK_U32 ChCnt) {
+    /* Enable VO */
+    VO_PUB_ATTR_S VoPubAttr;
+    VO_VIDEO_LAYER_ATTR_S stLayerAttr;
+    RK_S32 s32Ret = RK_SUCCESS;
+    VO_CHN_ATTR_S stChnAttr;
+    VO_LAYER VoLayer = 0;
+    VO_DEV VoDev = 0;
+
+    RK_MPI_VO_DisableLayer(VoLayer);
+    RK_MPI_VO_DisableLayer(4);
+    RK_MPI_VO_DisableLayer(5);
+    RK_MPI_VO_DisableLayer(6);
+    RK_MPI_VO_DisableLayer(7);
+    RK_MPI_VO_Disable(VoDev);
+
+    memset(&VoPubAttr, 0, sizeof(VO_PUB_ATTR_S));
+    memset(&stLayerAttr, 0, sizeof(VO_VIDEO_LAYER_ATTR_S));
+
+    stLayerAttr.enPixFormat = RK_FMT_RGB888;
+    stLayerAttr.stDispRect.s32X = 0;
+    stLayerAttr.stDispRect.s32Y = 0;
+    stLayerAttr.u32DispFrmRt = 30;
+    stLayerAttr.stDispRect.u32Width = 1920;
+    stLayerAttr.stDispRect.u32Height = 1080;
+    stLayerAttr.stImageSize.u32Width = 1920;
+    stLayerAttr.stImageSize.u32Height = 1080;
+
+    s32Ret = RK_MPI_VO_GetPubAttr(VoDev, &VoPubAttr);
+    if (s32Ret != RK_SUCCESS) {
+        return s32Ret;
+    }
+
+    VoPubAttr.enIntfType = VO_INTF_HDMI;
+    VoPubAttr.enIntfSync = VO_OUTPUT_DEFAULT;
+
+    s32Ret = RK_MPI_VO_SetPubAttr(VoDev, &VoPubAttr);
+    if (s32Ret != RK_SUCCESS) {
+        return s32Ret;
+    }
+    s32Ret = RK_MPI_VO_Enable(VoDev);
+    if (s32Ret != RK_SUCCESS) {
+        return s32Ret;
+    }
+
+    s32Ret = RK_MPI_VO_SetLayerAttr(VoLayer, &stLayerAttr);
+    if (s32Ret != RK_SUCCESS) {
+        RK_LOGE("RK_MPI_VO_SetLayerAttr failed,s32Ret:%d\n", s32Ret);
+        return RK_FAILURE;
+    }
+
+    s32Ret = RK_MPI_VO_BindLayer(VoLayer, VoDev, VO_LAYER_MODE_VIDEO);
+    if (s32Ret != RK_SUCCESS) {
+        RK_LOGE("RK_MPI_VO_BindLayer failed,s32Ret:%d\n", s32Ret);
+        return RK_FAILURE;
+    }
+
+
+    s32Ret = RK_MPI_VO_EnableLayer(VoLayer);
+    if (s32Ret != RK_SUCCESS) {
+        RK_LOGE("RK_MPI_VO_EnableLayer failed,s32Ret:%d\n", s32Ret);
+        return RK_FAILURE;
+    }
+
+    for (int i = 0; i < ChCnt; i++) {
+        stChnAttr.stRect.u32Width = stLayerAttr.stImageSize.u32Width / ChCnt;
+        stChnAttr.stRect.u32Height = stLayerAttr.stImageSize.u32Height / ChCnt;
+        stChnAttr.stRect.s32X = i * stChnAttr.stRect.u32Width / 2;
+        stChnAttr.stRect.s32Y = i * stChnAttr.stRect.u32Height / 2;
+        stChnAttr.u32Priority = i;
+        stChnAttr.u32FgAlpha = 128;
+        stChnAttr.u32BgAlpha = 0;
+
+        s32Ret = RK_MPI_VO_SetChnAttr(VoLayer, i, &stChnAttr);
+        if (s32Ret != RK_SUCCESS) {
+            RK_LOGE("set chn Attr failed,s32Ret:%d\n", s32Ret);
+            return RK_FAILURE;
+        }
+    }
+
+    return s32Ret;
+}
+
 
 RK_S32 unit_test_mpi_vdec(TEST_VDEC_CTX_S *ctx) {
+    MPP_CHN_S stSrcChn, stDestChn;
+    RK_S32 s32Ret = RK_FAILURE;
     RK_U32 u32Ch = 0;
     TEST_VDEC_CTX_S vdecCtx[VDEC_MAX_CHN_NUM];
     pthread_t vdecThread[VDEC_MAX_CHN_NUM];
@@ -490,10 +593,39 @@ RK_S32 unit_test_mpi_vdec(TEST_VDEC_CTX_S *ctx) {
             mpi_create_stream_mode(&vdecCtx[u32Ch], u32Ch);
             pthread_create(&vdecThread[u32Ch], 0, mpi_send_stream, reinterpret_cast<void *>(&vdecCtx[u32Ch]));
         } else  {
-         
+            return -1;
         }
 
-         pthread_create(&getPicThread[u32Ch], 0, mpi_get_pic, reinterpret_cast<void *>(&vdecCtx[u32Ch]));
+         //pthread_create(&getPicThread[u32Ch], 0, mpi_get_pic, reinterpret_cast<void *>(&vdecCtx[u32Ch]));
+    }
+
+    s32Ret = create_vo(ctx->u32ChNum);
+    if (s32Ret != RK_SUCCESS) {
+        RK_LOGE("create vo ch failed");
+        return -1;
+    }
+    // bind vi to vo
+    for (int i = 0; i < ctx->u32ChNum; i++) {
+        stSrcChn.enModId    = RK_ID_VDEC;
+        stSrcChn.s32DevId   = 0;
+        stSrcChn.s32ChnId   = i;
+
+        stDestChn.enModId   = RK_ID_VO;
+        stDestChn.s32DevId  = 0;
+        stDestChn.s32ChnId  = i;
+
+        s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
+        if (s32Ret != RK_SUCCESS) {
+            RK_LOGE("vi band vo fail:%x", s32Ret);
+            return -1;
+        }
+
+        // enable vo
+        s32Ret = RK_MPI_VO_EnableChn(0, i);
+        if (s32Ret != RK_SUCCESS) {
+            RK_LOGE("Enalbe vo chn failed, s32Ret = %d\n", s32Ret);
+            return -1;
+        }
     }
 
     for (u32Ch = 0; u32Ch < ctx->u32ChNum; u32Ch++) {
@@ -539,7 +671,7 @@ int main(int argc, const char **argv) {
     TEST_VDEC_CTX_S ctx;
     memset(&ctx, 0, sizeof(TEST_VDEC_CTX_S));
 
-    ctx.u32InputMode = VIDEO_MODE_FRAME;
+    ctx.u32InputMode = VIDEO_MODE_STREAM;
     ctx.s32LoopCount = 1;
     ctx.u32CompressMode = COMPRESS_MODE_NONE;  // Suggest::COMPRESS_AFBC_16x16;
     ctx.u32FrameBufferCnt = 8;
@@ -547,6 +679,9 @@ int main(int argc, const char **argv) {
     ctx.u32ChNum = 1;
     ctx.bEnableColmv = RK_TRUE;
     ctx.s32OutputPixFmt = (RK_S32)RK_FMT_YUV420SP;
+    ctx.u32SrcWidth = 1920;
+    ctx.u32SrcHeight = 1080;
+    ctx.enCodecId = RK_VIDEO_ID_AVC;
 
     struct argparse_option options[] = {
         OPT_HELP(),
@@ -568,7 +703,7 @@ int main(int argc, const char **argv) {
         OPT_INTEGER('c', "channel_count", &(ctx.u32ChNum),
                     "vdec channel count. default(1).", NULL, 0, 0),
         OPT_INTEGER('\0', "dec_mode", &(ctx.u32InputMode),
-                    "vdec decode mode. range(0:StreamMode, 1:FrameMode). default(1)", NULL, 0, 0),
+                    "vdec decode mode. range(0:StreamMode, 1:FrameMode). default(0)", NULL, 0, 0),
         OPT_INTEGER('\0', "dec_buf_cnt", &(ctx.u32FrameBufferCnt),
                     "vdec decode output buffer count, default(8)", NULL, 0, 0),
         OPT_INTEGER('\0', "compress_mode", &(ctx.u32CompressMode),

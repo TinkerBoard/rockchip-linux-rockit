@@ -48,9 +48,12 @@ RK_S32 TEST_VENC_SnapStart(COMMON_TEST_VENC_CTX_S *vencCtx);
 RK_S32 TEST_VENC_SnapProcess(COMMON_TEST_VENC_CTX_S *vencCtx);
 RK_S32 TEST_VENC_SnapStop(VENC_CHN VencChn);
 
-RK_S32 TEST_VENC_SET_BitRate(VENC_RC_ATTR_S *pRcAttr, RK_U32 u32BitRate);
+RK_S32 TEST_VENC_SET_BitRate(VENC_RC_ATTR_S *pRcAttr, RK_U32 u32BitRate, RK_U32 u32BitRateMax, RK_U32 u32BitRateMin);
 RK_S32 TEST_VENC_SET_GopSize(VENC_RC_ATTR_S *pRcAttr, RK_U32 u32GopSize);
 RK_S32 TEST_VENC_SET_FrameRate(VENC_RC_ATTR_S *pRcAttr, RK_U32 u32Fps);
+RK_S32 TEST_VENC_SET_FixQp(VENC_RC_ATTR_S *pRcAttr, RK_U32 u32FixIQp,
+                           RK_U32 u32FixPQp, RK_U32 u32FixBQp);
+RK_S32 TEST_VENC_SET_StatTime(VENC_RC_ATTR_S *pRcAttr, RK_U32 u32StatTime);
 
 #ifdef __cplusplus
 #if __cplusplus

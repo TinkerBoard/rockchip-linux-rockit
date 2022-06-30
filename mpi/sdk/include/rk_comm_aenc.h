@@ -29,23 +29,45 @@ extern "C" {
 #endif /* End of #ifdef __cplusplus */
 
 typedef struct rkAENC_ATTR_CODEC_S {
-    RK_U32 u32Channels;
-    RK_U32 u32SampleRate;
+    RK_CODEC_ID_E     enType;
     AUDIO_BIT_WIDTH_E enBitwidth;
+    RK_U32            u32Channels;
+    RK_U32            u32SampleRate;
+    RK_U32            u32Bitrate;
+
+    RK_U32            u32Resv[4];  /* resv for user */
+    RK_VOID          *pstResv;     /* resv for user */
 } AENC_ATTR_CODEC_S;
 
 typedef struct rkAENC_CHN_ATTR_S {
-    RK_CODEC_ID_E     enType;         /* audio codec id */
-    AENC_ATTR_CODEC_S stAencCodec;    /* channel count & samplerate */
+    RK_CODEC_ID_E     enType;          /* audio codec id */
     RK_U32            u32BufCount;     /* encode buffer count */
-    MB_BLK            extraData;      /* encode key parameters */
-    RK_U32            extraDataSize;  /* key parameters size */
+
+    AENC_ATTR_CODEC_S stCodecAttr;
 } AENC_CHN_ATTR_S;
 
+typedef struct rkAENC_ENCODER_S {
+    RK_CODEC_ID_E enType;
+    RK_U32 u32MaxFrmLen;
+    RK_CHAR aszName[17];
+    RK_S32 (*pfnOpenEncoder)(RK_VOID *pEncoderAttr, RK_VOID **ppEncoder);
+    RK_S32 (*pfnEncodeFrm)(RK_VOID *pEncoder, RK_VOID *pParam);
+    RK_S32 (*pfnCloseEncoder)(RK_VOID *pEncoder);
+} AENC_ENCODER_S;
+
 typedef enum rkEN_AENC_ERR_CODE_E {
-    AENC_ERR_ENCODER_ERR     = 64 ,
-    AENC_ERR_VQE_ERR        = 65 ,
+    AENC_ERR_ENCODER_ERR       = 64,
+    AENC_ERR_VQE_ERR           = 65,
+    AENC_ERR_REGISTER_ERR      = 66
 } EN_AENC_ERR_CODE_E;
+
+/* result of register AENC */
+typedef enum rkENC_ENCODER_RESULT {
+    AENC_ENCODER_OK = RK_SUCCESS,
+    AENC_ENCODER_TRY_AGAIN,
+    AENC_ENCODER_ERROR,
+    AENC_ENCODER_EOS,
+} AENC_ENCODER_RESULT;
 
 /* invlalid device ID */
 #define RK_ERR_AENC_INVALID_DEVID     RK_DEF_ERR(RK_ID_AENC, RK_ERR_LEVEL_ERROR, RK_ERR_INVALID_DEVID)
@@ -78,7 +100,9 @@ typedef enum rkEN_AENC_ERR_CODE_E {
 /* encoder internal err */
 #define RK_ERR_AENC_ENCODER_ERR       RK_DEF_ERR(RK_ID_AENC, RK_ERR_LEVEL_ERROR, AENC_ERR_ENCODER_ERR)
 /* vqe internal err */
-#define RK_ERR_AENC_VQE_ERR       RK_DEF_ERR(RK_ID_AENC, RK_ERR_LEVEL_ERROR, AENC_ERR_VQE_ERR)
+#define RK_ERR_AENC_VQE_ERR           RK_DEF_ERR(RK_ID_AENC, RK_ERR_LEVEL_ERROR, AENC_ERR_VQE_ERR)
+/* register Aenc fail */
+#define RK_ERR_AENC_REGISTER_ERR      RK_DEF_ERR(RK_ID_AENC, RK_ERR_LEVEL_ERROR, AENC_ERR_REGISTER_ERR)
 
 
 #ifdef __cplusplus

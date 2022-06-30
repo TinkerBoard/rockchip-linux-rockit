@@ -54,6 +54,10 @@ extern "C" {
 #define VPSS_CHN3                    3
 #define VPSS_INVALID_CHN             -1
 
+typedef struct rkVPSS_MOD_PARAM_S {
+    MB_SOURCE_E enVpssMBSource;
+} VPSS_MOD_PARAM_S;
+
 typedef struct rkVPSS_GRP_ATTR_S {
     RK_U32                     u32MaxW;           /* RW; Range: [64, 16384]; Width of source image. */
     RK_U32                     u32MaxH;           /* RW; Range: [64, 16384]; Height of source image. */
@@ -83,17 +87,13 @@ typedef struct rkVPSS_CHN_ATTR_S {
     RK_BOOL             bFlip;              /* RW; Flip enable. */
     RK_U32              u32Depth;           /* RW; Range: [0, 8]; User get list depth. */
     ASPECT_RATIO_S      stAspectRatio;      /* Aspect Ratio info. */
+    RK_U32              u32FrameBufCnt;     /* RW; frame buffer cnt only used by MB_SOURCE_PRIVATE */
 } VPSS_CHN_ATTR_S;
 
 typedef enum rkVPSS_CROP_COORDINATE_E {
     VPSS_CROP_RATIO_COOR = 0,   /* Ratio coordinate. */
     VPSS_CROP_ABS_COOR          /* Absolute coordinate. */
 } VPSS_CROP_COORDINATE_E;
-
-typedef enum rkVPSS_WORK_UNIT_E {
-    VPSS_WORK_UNIT_RGA = 0,       /*  */
-    VPSS_WORK_UNIT_GPU            /*  */
-} VPSS_WORK_UNIT_E;
 
 typedef struct rkVPSS_CROP_INFO_S {
     RK_BOOL                 bEnable;            /* RW; Range: [0, 1];  CROP enable. */

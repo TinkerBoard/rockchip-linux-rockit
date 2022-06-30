@@ -116,6 +116,7 @@ typedef enum rkMOD_ID_E {
     RK_ID_ISP     = 15,
     RK_ID_WBC     = 16,
     RK_ID_AVS     = 17,
+    RK_ID_GDC     = 18,
 
     RK_ID_BUTT,
 } MOD_ID_E;
@@ -145,12 +146,13 @@ typedef struct rkMPP_CHN_S {
 #define RK_MOD_ISP       "isp"
 #define RK_MOD_WBC       "wbc"
 #define RK_MOD_AVS       "avs"
+#define RK_MOD_GDC       "gdc"
 
 typedef enum rkCODEC_ID_E {
      RK_VIDEO_ID_Unused,             /**< Value when coding is N/A */
      RK_VIDEO_ID_AutoDetect,         /**< Autodetection of coding type */
      RK_VIDEO_ID_MPEG1VIDEO,
-     RK_VIDEO_ID_MPEG2VIDEO,              /**< AKA: H.262 */
+     RK_VIDEO_ID_MPEG2VIDEO,         /**< AKA: H.262 */
      RK_VIDEO_ID_H263,               /**< H.263 */
      RK_VIDEO_ID_MPEG4,              /**< MPEG-4 */
      RK_VIDEO_ID_WMV,                /**< Windows Media Video (WMV1,WMV2,WMV3)*/
@@ -169,6 +171,7 @@ typedef enum rkCODEC_ID_E {
      RK_VIDEO_ID_VP6,
      RK_VIDEO_ID_AVSPLUS,            /**< AVS+ profile=0x48 */
      RK_VIDEO_ID_AVS,                /**< AVS  profile=0x20 */
+     RK_VIDEO_ID_AV1,
      /* *< Reserved region for introducing Khronos Standard Extensions */
      RK_VIDEO_ID_KhronosExtensions = 0x2F000000,
      /* *< Reserved region for introducing Vendor Extensions */
@@ -184,6 +187,7 @@ typedef enum rkCODEC_ID_E {
      RK_AUDIO_ID_PCM_S32LE,   /**< Any variant of PCM_S32LE coding */
      RK_AUDIO_ID_ADPCM_G722,         /**< Any variant of ADPCM_G722 encoded data */
      RK_AUDIO_ID_ADPCM_G726,         /**< Any variant of ADPCM_G726 encoded data */
+     RK_AUDIO_ID_ADPCM_G726LE,       /**< G.726 ADPCM little-endian encoded data*/
      RK_AUDIO_ID_ADPCM_IMA_QT,       /**< Any variant of ADPCM_IMA encoded data */
      RK_AUDIO_ID_AMR_NB,      /**< Any variant of AMR_NB encoded data */
      RK_AUDIO_ID_AMR_WB,      /**< Any variant of AMR_WB encoded data */

@@ -47,6 +47,8 @@ RK_S32 RK_MPI_AO_SetVolume(AUDIO_DEV AoDevId, RK_S32 s32VolumeDb);
 RK_S32 RK_MPI_AO_GetVolume(AUDIO_DEV AoDevId, RK_S32 *ps32VolumeDb);
 RK_S32 RK_MPI_AO_SetMute(AUDIO_DEV AoDevId, RK_BOOL bEnable, const AUDIO_FADE_S *pstFade);
 RK_S32 RK_MPI_AO_GetMute(AUDIO_DEV AoDevId, RK_BOOL *pbEnable, AUDIO_FADE_S *pstFade);
+RK_S32 RK_MPI_AO_SetChnParams(AUDIO_DEV AoDevId, AO_CHN AoChn, const AO_CHN_PARAM_S *pstParams);
+RK_S32 RK_MPI_AO_GetChnParams(AUDIO_DEV AoDevId, AO_CHN AoChn, AO_CHN_PARAM_S *pstParams);
 // RK_S32 RK_MPI_AO_GetFd(AUDIO_DEV AoDevId, AO_CHN AoChn);
 RK_S32 RK_MPI_AO_SaveFile(AUDIO_DEV AoDevId, AO_CHN AoChn, AUDIO_SAVE_FILE_INFO_S* pstSaveFileInfo);
 RK_S32 RK_MPI_AO_QueryFileStatus(AUDIO_DEV AoDevId, AO_CHN AoChn, AUDIO_FILE_STATUS_S* pstFileStatus);

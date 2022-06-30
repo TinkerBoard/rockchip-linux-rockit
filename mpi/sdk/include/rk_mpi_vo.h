@@ -35,8 +35,12 @@ RK_S32 RK_MPI_VO_GetPubAttr(VO_DEV VoDev, VO_PUB_ATTR_S *pstPubAttr);
 RK_S32 RK_MPI_VO_GetPostProcessParam(VO_DEV VoDev, VO_CSC_S *pstParam);
 RK_S32 RK_MPI_VO_SetPostProcessParam(VO_DEV VoDev, VO_CSC_S *pstParam);
 
+RK_S32 RK_MPI_VO_SetVcntTiming(VO_DEV VoDev, RK_U32 u32VcntTiming);
+
 RK_S32 RK_MPI_VO_Enable(VO_DEV VoDev);
 RK_S32 RK_MPI_VO_Disable(VO_DEV VoDev);
+
+RK_S32 RK_MPI_VO_SyncDevs(RK_U32 u32Vodevs);
 
 /* Interface Setting */
 RK_S32 RK_MPI_VO_GetHdmiParam(RK_U32 enIntfType, RK_U32 u32Id, VO_HDMI_PARAM_S *pstHDMIParam);
@@ -47,6 +51,9 @@ RK_S32 RK_MPI_VO_GetSinkCapability(RK_U32 enIntfType, RK_U32 u32Id, VO_SINK_CAPA
 
 RK_S32 RK_MPI_VO_RegCallbackFunc(RK_U32 enIntfType, RK_U32 u32Id, RK_VO_CALLBACK_FUNC_S *pstCallbackFunc);
 RK_S32 RK_MPI_VO_UnRegCallbackFunc(RK_U32 enIntfType, RK_U32 u32Id, RK_VO_CALLBACK_FUNC_S *pstCallbackFunc);
+
+RK_S32 RK_MPI_VO_RegVsyncCallbackFunc(VO_DEV VoDev, RK_VO_VSYNC_CALLBACK_FUNC_S *pstCallbackFunc);
+RK_S32 RK_MPI_VO_UnRegVsyncCallbackFunc(VO_DEV VoDev, RK_VO_VSYNC_CALLBACK_FUNC_S *pstCallbackFunc);
 
 RK_S32 RK_MPI_VO_CloseFd(RK_VOID);
 
@@ -124,6 +131,9 @@ RK_S32 RK_MPI_VO_ClearChnBuffer(VO_LAYER VoLayer, VO_CHN VoChn, RK_BOOL bClrAll)
 RK_S32 RK_MPI_VO_SetChnBorder(VO_LAYER VoLayer, VO_CHN VoChn, const VO_BORDER_S *pstBorder);
 RK_S32 RK_MPI_VO_GetChnBorder(VO_LAYER VoLayer, VO_CHN VoChn, VO_BORDER_S *pstBorder);
 
+RK_S32 RK_MPI_VO_SetChnRecvThreshold(VO_LAYER VoLayer, VO_CHN VoChn, RK_U32 u32Threshold);
+RK_S32 RK_MPI_VO_GetChnRecvThreshold(VO_LAYER VoLayer, VO_CHN VoChn, RK_U32 *pu32Threshold);
+
 RK_S32 RK_MPI_VO_GetChnPts(VO_LAYER VoLayer, VO_CHN VoChn, RK_U64 *pu64ChnPts);
 RK_S32 RK_MPI_VO_QueryChnStat(VO_LAYER VoLayer, VO_CHN VoChn, VO_QUERY_STATUS_S *pstStatus);
 
@@ -149,9 +159,6 @@ RK_S32 RK_MPI_VO_ReleaseWbcFrame(VO_WBC VoWbc, VIDEO_FRAME_INFO_S *pstVFrame);
 /* splice type setting */
 RK_S32 RK_MPI_VO_SetLayerSpliceMode(VO_LAYER VoLayer, VO_SPLICE_MODE_E enSpliceMode);
 RK_S32 RK_MPI_VO_GetLayerSpliceMode(VO_LAYER VoLayer, VO_SPLICE_MODE_E *enSpliceMode);
-
-RK_S32 RK_MPI_VO_SetChnRotation(VO_LAYER VoLayer, VO_CHN VoChn, ROTATION_E enRotation);
-RK_S32 RK_MPI_VO_GetChnRotation(VO_LAYER VoLayer, VO_CHN VoChn, ROTATION_E *penRotation);
 
 #ifdef __cplusplus
 #if __cplusplus

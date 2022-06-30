@@ -35,6 +35,7 @@ static void mpi_vpss_test_show_options(const TEST_VPSS_CTX_S *ctx) {
     RK_PRINT("input  file name       : %s\n", ctx->srcFileName);
     RK_PRINT("output file name       : %s\n", ctx->dstFilePath);
     RK_PRINT("loop count             : %d\n", ctx->s32LoopCount);
+    RK_PRINT("video process device   : %d\n", ctx->s32VProcDevType);
     RK_PRINT("group number           : %d\n", ctx->s32GrpNum);
     RK_PRINT("channel number         : %d\n", ctx->s32ChnNum);
     RK_PRINT("group crop enabled     : %d\n", ctx->bGrpCropEn ? 1 : 0);
@@ -55,7 +56,6 @@ static void mpi_vpss_test_show_options(const TEST_VPSS_CTX_S *ctx) {
     RK_PRINT("any rotation angle     : %d\n", ctx->s32RotationEx);
     RK_PRINT("enable mirror          : %d\n", ctx->s32Mirror);
     RK_PRINT("enable flip            : %d\n", ctx->s32Flip);
-    RK_PRINT("enable backup frame    : %d\n", ctx->bBackupFrame);
     RK_PRINT("enable attach mb pool  : %d\n", ctx->bAttachPool);
 }
 
@@ -68,6 +68,7 @@ RK_S32 main(int argc, const char **argv) {
     //  set default params.
     ctx.dstFilePath     = RK_NULL;
     ctx.s32LoopCount    = 1;
+    ctx.s32VProcDevType = VIDEO_PROC_DEV_GPU;
     ctx.s32GrpNum       = 1;
     ctx.s32ChnNum       = 1;
     ctx.bGrpCropEn      = RK_FALSE;
@@ -94,6 +95,8 @@ RK_S32 main(int argc, const char **argv) {
                     "output file path. e.g.(/userdata/vpss/). default(NULL).", NULL, 0, 0),
         OPT_INTEGER('n', "loop_count", &(ctx.s32LoopCount),
                     "loop running count. default(1)", NULL, 0, 0),
+        OPT_INTEGER('\0', "video_proc_dev_type", &(ctx.s32VProcDevType),
+                    "the device type of video process. default(0. 0 is GPU, 1 is RGA)", NULL, 0, 0),
         OPT_INTEGER('g', "group_count", &(ctx.s32GrpNum),
                     "the count of vpss group. default(1).", NULL, 0, 0),
         OPT_INTEGER('c', "channel_count", &(ctx.s32ChnNum),
@@ -128,10 +131,10 @@ RK_S32 main(int argc, const char **argv) {
                     "dst pixel format. default(0. 0 is NV12).", NULL, 0, 0),
         OPT_INTEGER('r', "rotation", &(ctx.s32Rotation),
                     "fixed rotation angle. default(0). 0: 0. 1: 90. 2: 180. 3: 270", NULL, 0, 0),
+        OPT_INTEGER('\0', "grp_rotation", &(ctx.s32GrpRotation),
+                    "fixed group rotation angle. default(0). 0: 0. 1: 90. 2: 180. 3: 270", NULL, 0, 0),
         OPT_INTEGER('R', "rotation_ex", &(ctx.s32RotationEx),
                     "any rotation angle. default(0). ", NULL, 0, 0),
-        OPT_INTEGER('b', "backup_frame", &(ctx.bBackupFrame),
-                    "enable backup frame or not, default(0), 0: RK_FALSE, 1: RK_TRUE", NULL, 0, 0),
         OPT_INTEGER('a', "attach_mb_pool", &(ctx.bAttachPool),
                     "enable attach mb pool or not, default(0), 0: RK_FALSE, 1: RK_TRUE", NULL, 0, 0),
         OPT_INTEGER('\0', "chn_mode", &(ctx.s32ChnMode),

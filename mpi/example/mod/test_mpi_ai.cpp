@@ -224,8 +224,9 @@ void* sendDataThread(void * ptr) {
         result = RK_MPI_AI_GetFrame(params->s32DevId, params->s32ChnIndex, &frame, RK_NULL, s32MilliSec);
         if (result == 0) {
             void* data = RK_MPI_MB_Handle2VirAddr(frame.pMbBlk);
-            RK_U32 len = RK_MPI_MB_GetSize(frame.pMbBlk);
-            RK_LOGV("data = %p, len = %d", data, len);
+            // get the length of valid data in this frame
+            RK_U64 len = RK_MPI_MB_GetLength(frame.pMbBlk);
+            RK_LOGV("data = %p, len = %lld", data, len);
             RK_MPI_AI_ReleaseFrame(params->s32DevId, params->s32ChnIndex, &frame, RK_NULL);
         }
     }
@@ -339,8 +340,6 @@ int main(int argc, const char **argv) {
                                  "\nuse --help for details.");
 
     argc = argparse_parse(&argparse, argc, argv);
-    argparse_usage(&argparse);
-
     mpi_ai_test_show_options(ctx);
 
     if (ctx->s32Channel <= 0

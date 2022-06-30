@@ -131,24 +131,6 @@ static void *TEST_VPSS_ModSingleTest(void *arg) {
             }
         }
     }
-    if (pstCtx->bBackupFrame) {
-        char cWritePath[128] = {0};
-        s32Ret = TEST_VPSS_ModGetGrpFrame(pstCtx, &stGrpFrameInfo);
-        if (s32Ret != RK_SUCCESS) {
-            goto __FAILED;
-        }
-        snprintf(cWritePath, sizeof(cWritePath), "%sgrp_out_%dx%d_%d.bin",
-                 pstCtx->dstFilePath, stGrpFrameInfo.stVFrame.u32VirWidth,
-                 stGrpFrameInfo.stVFrame.u32VirHeight, pstCtx->s32GrpIndex);
-        s32Ret = TEST_COMM_FileWriteOneFrame(cWritePath, &stGrpFrameInfo);
-        if (s32Ret != RK_SUCCESS) {
-            goto __FAILED;
-        }
-        s32Ret = RK_MPI_VPSS_ReleaseGrpFrame(pstCtx->s32GrpIndex, 0, &stGrpFrameInfo);
-        if (s32Ret != RK_SUCCESS) {
-            goto __FAILED;
-        }
-    }
 
     retArg = arg;
 __FAILED:
@@ -212,15 +194,37 @@ RK_S32 TEST_VPSS_ModInit(TEST_VPSS_CTX_S *pstCtx) {
 
     TEST_VPSS_InitAttr(pstCtx, &stVpssGrpAttr, stVpssChnAttr);
 
-    s32Ret = TEST_VPSS_Start(pstCtx->s32GrpIndex, pstCtx->s32ChnNum, &stVpssGrpAttr, stVpssChnAttr);
+    if (pstCtx->bAttachPool) {
+        VPSS_MOD_PARAM_S stModParam;
+        stModParam.enVpssMBSource = MB_SOURCE_USER;
+        s32Ret = RK_MPI_VPSS_SetModParam(&stModParam);
+        if (s32Ret != RK_SUCCESS) {
+            goto __FAILED;
+        }
+    }
+
+    s32Ret = TEST_VPSS_Start(pstCtx->s32GrpIndex, pstCtx->s32ChnNum,
+                             &stVpssGrpAttr, stVpssChnAttr);
     if (s32Ret != RK_SUCCESS) {
         goto __FAILED;
+    }
+
+    s32Ret = RK_MPI_VPSS_SetVProcDev(pstCtx->s32GrpIndex, (VIDEO_PROC_DEV_TYPE_E)pstCtx->s32VProcDevType);
+    if (s32Ret != RK_SUCCESS) {
+        RK_LOGE("RK_MPI_VPSS_SetVProcDev(grp:%d) failed with %#x!", pstCtx->s32GrpIndex, s32Ret);
+        return s32Ret;
     }
 
     s32Ret = TEST_VPSS_GrpSetZoom(pstCtx->s32GrpIndex, pstCtx->s32GrpCropRatio, pstCtx->bGrpCropEn);
     if (s32Ret != RK_SUCCESS) {
         goto __FAILED;
     }
+
+    s32Ret = RK_MPI_VPSS_SetGrpRotation(pstCtx->s32GrpIndex, (ROTATION_E)pstCtx->s32GrpRotation);
+    if (s32Ret != RK_SUCCESS) {
+        goto __FAILED;
+    }
+
     for (RK_S32 chnIndex = 0; chnIndex < pstCtx->s32ChnNum; chnIndex++) {
         s32Ret = TEST_VPSS_ChnSetZoom(pstCtx->s32GrpIndex, chnIndex, pstCtx->s32ChnCropRatio, pstCtx->bChnCropEn);
         if (s32Ret != RK_SUCCESS) {
@@ -244,12 +248,6 @@ RK_S32 TEST_VPSS_ModInit(TEST_VPSS_CTX_S *pstCtx) {
             if (s32Ret != RK_SUCCESS) {
                 goto __FAILED;
             }
-        }
-    }
-    if (pstCtx->bBackupFrame) {
-        s32Ret = RK_MPI_VPSS_EnableBackupFrame(pstCtx->s32GrpIndex);
-        if (s32Ret != RK_SUCCESS) {
-            goto __FAILED;
         }
     }
 
@@ -293,6 +291,8 @@ RK_S32 TEST_VPSS_ModSendFrame(TEST_VPSS_CTX_S *pstCtx) {
     RK_S32 s32Ret = RK_SUCCESS;
     PIC_BUF_ATTR_S stPicBufAttr;
     VIDEO_FRAME_INFO_S stVideoFrame;
+
+    memset(&stVideoFrame, 0x0, sizeof(VIDEO_FRAME_INFO_S));
 
     stPicBufAttr.u32Width = pstCtx->s32SrcWidth;
     stPicBufAttr.u32Height = pstCtx->s32SrcHeight;

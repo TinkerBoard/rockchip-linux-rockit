@@ -19,7 +19,5 @@ endif()
 
 add_subdirectory(common)
 add_subdirectory(mod)
-add_subdirectory(samples)
-add_subdirectory(player)
 
 install(PROGRAMS ${ROCKIT_DUMPSYS_FILE} DESTINATION "bin")

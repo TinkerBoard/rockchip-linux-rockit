@@ -37,6 +37,9 @@ RK_S32   RK_MPI_MB_Handle2Fd(MB_BLK mb);
 MB_POOL  RK_MPI_MB_Handle2PoolId(MB_BLK mb);
 RK_S32   RK_MPI_MB_Handle2UniqueId(MB_BLK mb);
 RK_U64   RK_MPI_MB_GetSize(MB_BLK mb);
+RK_U64   RK_MPI_MB_GetLength(MB_BLK mb);
+RK_U32   RK_MPI_MB_GetOffset(MB_BLK mb);
+RK_S32   RK_MPI_MB_SetOffset(MB_BLK mb, RK_U32 u32Offset);
 
 MB_BLK   RK_MPI_MB_VirAddr2Handle(RK_VOID *pstVirAddr);
 RK_S32   RK_MPI_MB_UniqueId2Fd(RK_S32 s32UniqueId);
@@ -45,6 +48,11 @@ RK_S32   RK_MPI_MB_InquireUserCnt(MB_BLK mb);
 
 RK_S32   RK_MPI_MB_SetModPoolConfig(MB_UID_E enMbUid, const MB_CONFIG_S *pstMbConfig);
 RK_S32   RK_MPI_MB_GetModPoolConfig(MB_UID_E enMbUid, MB_CONFIG_S *pstMbConfig);
+
+RK_S32   RK_MPI_MB_Init();
+RK_S32   RK_MPI_MB_Exit();
+RK_S32   RK_MPI_MB_SetConfig(const MB_CONFIG_S *pstMbConfig);
+RK_S32   RK_MPI_MB_GetConfig(MB_CONFIG_S *pstMbConfig);
 
 RK_S32   RK_MPI_MB_SetBufferStride(MB_BLK mb, RK_U32 u32HorStride, RK_U32 u32VerStride);
 

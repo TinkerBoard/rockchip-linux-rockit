@@ -30,6 +30,7 @@ typedef struct _rkMpiVPSSCtx {
     const char *srcFileName;
     const char *dstFilePath;
     RK_S32  s32LoopCount;
+    RK_S32  s32VProcDevType;
     RK_S32  s32GrpNum;
     RK_S32  s32ChnNum;
     RK_BOOL bGrpCropEn;
@@ -49,12 +50,12 @@ typedef struct _rkMpiVPSSCtx {
     RK_S32  s32DstCompressMode;
     RK_S32  s32DstPixFormat;
 
+    RK_S32  s32GrpRotation;
     RK_S32  s32Rotation;
     RK_S32  s32RotationEx;
     RK_S32  s32Mirror;
     RK_S32  s32Flip;
 
-    RK_BOOL bBackupFrame;
     RK_BOOL bAttachPool;
     RK_S32  s32ChnMode;
     RK_U32  u32ChnDepth;

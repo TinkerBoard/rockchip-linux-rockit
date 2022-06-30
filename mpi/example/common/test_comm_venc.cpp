@@ -24,6 +24,7 @@ extern "C" {
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "test_comm_venc.h"
 #include "test_comm_imgproc.h"
@@ -35,7 +36,6 @@ extern "C" {
 #include "rk_mpi_cal.h"
 #include "rk_mpi_sys.h"
 #include "rk_mpi_mb.h"
-//#include "rt_mem.h"
 
 #define TEST_VENC_PATH_LENGTH         128
 #define TEST_VENC_TIME_OUT_MS         100
@@ -45,7 +45,7 @@ typedef struct test_venc_getstream_s {
      FILE *fp;
      pthread_t VencPid;
      MB_POOL pool;
-     COMMON_TEST_VENC_CTX_S *vencCtx;
+     COMMON_TEST_VENC_CTX_S stVencCtx;
 } TEST_VENC_THREAD_S;
 
 // get stream thread info
@@ -102,6 +102,7 @@ RK_S32 TEST_VENC_Start(COMMON_TEST_VENC_CTX_S *vencCtx) {
     if (s32Ret != RK_SUCCESS) {
         return s32Ret;
     }
+    s32Ret = TEST_VENC_StartGetStream(vencCtx);
 
     return s32Ret;
 }
@@ -201,7 +202,7 @@ RK_S32 TEST_VENC_SnapProcess(COMMON_TEST_VENC_CTX_S *vencCtx) {
                 RK_MPI_VENC_ReleaseStream(vencCtx->VencChn, &stVencStream);
                 break;
             }
-            RK_MPI_VENC_ReleaseStream(0, &stVencStream);
+            RK_MPI_VENC_ReleaseStream(vencCtx->VencChn, &stVencStream);
         } else {
              usleep(1000llu);
         }
@@ -229,7 +230,7 @@ static RK_VOID* TEST_VENC_GetVencStreamProc(RK_VOID *p) {
     stVencStream.pstPack = reinterpret_cast<VENC_PACK_S *>(malloc(sizeof(VENC_PACK_S)));
 
     while (RK_TRUE == pstThreadInfo->bThreadStart) {
-        s32Ret = RK_MPI_VENC_GetStream(pstThreadInfo->vencCtx->VencChn, &stVencStream, TEST_VENC_TIME_OUT_MS);
+        s32Ret = RK_MPI_VENC_GetStream(pstThreadInfo->stVencCtx.VencChn, &stVencStream, TEST_VENC_TIME_OUT_MS);
         if (s32Ret >= 0) {
             if (pstThreadInfo->fp != RK_NULL) {
                 pData = RK_MPI_MB_Handle2VirAddr(stVencStream.pstPack->pMbBlk);
@@ -238,12 +239,12 @@ static RK_VOID* TEST_VENC_GetVencStreamProc(RK_VOID *p) {
                 fflush(pstThreadInfo->fp);
             }
             if (stVencStream.pstPack->bStreamEnd == RK_TRUE) {
-                RK_LOGI("get chn %d stream %d", pstThreadInfo->vencCtx->VencChn, stVencStream.u32Seq + 1);
-                RK_LOGI("chn %d reach EOS stream", pstThreadInfo->vencCtx->VencChn);
-                RK_MPI_VENC_ReleaseStream(pstThreadInfo->vencCtx->VencChn, &stVencStream);
+                RK_LOGI("get chn %d stream %d", pstThreadInfo->stVencCtx.VencChn, stVencStream.u32Seq + 1);
+                RK_LOGI("chn %d reach EOS stream", pstThreadInfo->stVencCtx.VencChn);
+                RK_MPI_VENC_ReleaseStream(pstThreadInfo->stVencCtx.VencChn, &stVencStream);
                 break;
             }
-            RK_MPI_VENC_ReleaseStream(0, &stVencStream);
+            RK_MPI_VENC_ReleaseStream(pstThreadInfo->stVencCtx.VencChn, &stVencStream);
         } else {
              usleep(1000llu);
         }
@@ -266,7 +267,7 @@ static RK_S32 TEST_VENC_StartGetStream(COMMON_TEST_VENC_CTX_S *vencCtx) {
         }
     }
     gGSThread[vencCtx->VencChn].bThreadStart = RK_TRUE;
-    gGSThread[vencCtx->VencChn].vencCtx = vencCtx;
+    memcpy(&gGSThread[vencCtx->VencChn].stVencCtx, vencCtx, sizeof(COMMON_TEST_VENC_CTX_S));
 
     s32Ret = pthread_create(&(gGSThread[vencCtx->VencChn].VencPid), 0,
                             TEST_VENC_GetVencStreamProc,
@@ -294,7 +295,7 @@ static RK_S32 TEST_VENC_StopGetStream(VENC_CHN VencChn) {
 static void* TEST_VENC_SendVencFrameProc(void *pArgs) {
     TEST_VENC_THREAD_S  *pstThreadInfo = (TEST_VENC_THREAD_S *)pArgs;
     RK_S32               s32Ret         = RK_SUCCESS;
-    VENC_CHN             VencChn        = pstThreadInfo->vencCtx->VencChn;
+    VENC_CHN             VencChn        = pstThreadInfo->stVencCtx.VencChn;
     RK_U8               *pVirAddr       = RK_NULL;
     RK_U32               u32SrcSize     = 0;
     MB_BLK               blk            = RK_NULL;
@@ -315,7 +316,7 @@ static void* TEST_VENC_SendVencFrameProc(void *pArgs) {
     stPicBufAttr.u32Width = stChnAttr.stVencAttr.u32PicWidth;
     stPicBufAttr.u32Height = stChnAttr.stVencAttr.u32PicHeight;
     stPicBufAttr.enCompMode = COMPRESS_MODE_NONE;
-    stPicBufAttr.enPixelFormat = pstThreadInfo->vencCtx->enPixFmt;
+    stPicBufAttr.enPixelFormat = pstThreadInfo->stVencCtx.enPixFmt;
     s32Ret = RK_MPI_CAL_COMM_GetPicBufferSize(&stPicBufAttr, &stMbPicCalResult);
     if (s32Ret != RK_SUCCESS) {
         RK_LOGE("get picture buffer size failed. err 0x%x", s32Ret);
@@ -324,7 +325,7 @@ static void* TEST_VENC_SendVencFrameProc(void *pArgs) {
     u32BufferSize = stMbPicCalResult.u32MBSize;
     memset(&stMbPoolCfg, 0, sizeof(MB_POOL_CONFIG_S));
     stMbPoolCfg.u64MBSize = u32BufferSize;
-    stMbPoolCfg.u32MBCnt  = pstThreadInfo->vencCtx->u32StreamBufCnt;
+    stMbPoolCfg.u32MBCnt  = pstThreadInfo->stVencCtx.u32StreamBufCnt;
     stMbPoolCfg.enAllocType = MB_ALLOC_TYPE_DMA;
     pstThreadInfo->pool = RK_MPI_MB_CreatePool(&stMbPoolCfg);
 
@@ -340,9 +341,9 @@ static void* TEST_VENC_SendVencFrameProc(void *pArgs) {
             s32Ret = TEST_COMM_FillImage(pVirAddr, stChnAttr.stVencAttr.u32PicWidth,
                             stChnAttr.stVencAttr.u32PicHeight,
                             RK_MPI_CAL_COMM_GetHorStride(stMbPicCalResult.u32VirWidth,
-                                                         pstThreadInfo->vencCtx->enPixFmt),
+                                                         pstThreadInfo->stVencCtx.enPixFmt),
                             stMbPicCalResult.u32VirHeight,
-                            pstThreadInfo->vencCtx->enPixFmt,
+                            pstThreadInfo->stVencCtx.enPixFmt,
                             s32FrameCount);
             if (s32Ret != RK_SUCCESS) {
                 RK_MPI_MB_ReleaseMB(blk);
@@ -356,13 +357,13 @@ static void* TEST_VENC_SendVencFrameProc(void *pArgs) {
         stFrame.stVFrame.u32Height = stChnAttr.stVencAttr.u32PicHeight;
         stFrame.stVFrame.u32VirWidth = stMbPicCalResult.u32VirWidth;
         stFrame.stVFrame.u32VirHeight = stMbPicCalResult.u32VirHeight;
-        stFrame.stVFrame.enPixelFormat = pstThreadInfo->vencCtx->enPixFmt;
+        stFrame.stVFrame.enPixelFormat = pstThreadInfo->stVencCtx.enPixFmt;
         stFrame.stVFrame.u32FrameFlag |= s32ReachEOS ? FRAME_FLAG_SNAP_END : 0;
 __RETRY:
         if (RK_FALSE == pstThreadInfo->bThreadStart) {
             break;
         }
-        s32Ret = RK_MPI_VENC_SendFrame(pstThreadInfo->vencCtx->VencChn,
+        s32Ret = RK_MPI_VENC_SendFrame(pstThreadInfo->stVencCtx.VencChn,
                                        &stFrame,
                                        TEST_VENC_TIME_OUT_MS);
         if (s32Ret < 0) {
@@ -370,15 +371,15 @@ __RETRY:
             goto  __RETRY;
         } else {
             s32FrameCount++;
-            if (!pstThreadInfo->vencCtx->u32ReadPicNum ||
-                (pstThreadInfo->vencCtx->u32ReadPicNum &&
-                 s32FrameCount < pstThreadInfo->vencCtx->u32ReadPicNum)) {
+            if (!pstThreadInfo->stVencCtx.u32ReadPicNum ||
+                (pstThreadInfo->stVencCtx.u32ReadPicNum &&
+                 s32FrameCount < pstThreadInfo->stVencCtx.u32ReadPicNum)) {
                 RK_MPI_MB_ReleaseMB(blk);
                 blk = RK_NULL;
             } else {
                 // not need read the input data for performance test.
-                if (pstThreadInfo->vencCtx->s32RecvPicNum &&
-                    s32FrameCount > pstThreadInfo->vencCtx->s32RecvPicNum) {
+                if (pstThreadInfo->stVencCtx.s32RecvPicNum > 0 &&
+                    s32FrameCount > pstThreadInfo->stVencCtx.s32RecvPicNum) {
                     s32ReachEOS = 1;
                     break;
                 }
@@ -386,7 +387,7 @@ __RETRY:
             }
         }
         if (s32ReachEOS) {
-            RK_LOGI("chn %d reach EOS.", pstThreadInfo->vencCtx->VencChn);
+            RK_LOGI("chn %d reach EOS.", pstThreadInfo->stVencCtx.VencChn);
             break;
         }
     }
@@ -411,7 +412,7 @@ static RK_S32 TEST_VENC_StartSendFrame(COMMON_TEST_VENC_CTX_S *vencCtx) {
         }
     }
     gSFThread[vencCtx->VencChn].bThreadStart = RK_TRUE;
-    gSFThread[vencCtx->VencChn].vencCtx = vencCtx;
+    memcpy(&gSFThread[vencCtx->VencChn].stVencCtx, vencCtx, sizeof(COMMON_TEST_VENC_CTX_S));
 
     s32Ret = pthread_create(&(gSFThread[vencCtx->VencChn].VencPid), 0,
                             TEST_VENC_SendVencFrameProc,
@@ -436,7 +437,7 @@ static RK_S32 TEST_VENC_StopSendFrame(VENC_CHN VencChn) {
     return RK_SUCCESS;
 }
 
-RK_S32 TEST_VENC_SET_BitRate(VENC_RC_ATTR_S *pRcAttr, RK_U32 u32BitRate) {
+RK_S32 TEST_VENC_SET_BitRate(VENC_RC_ATTR_S *pRcAttr, RK_U32 u32BitRate, RK_U32 u32BitRateMax, RK_U32 u32BitRateMin) {
     switch (pRcAttr->enRcMode) {
       case VENC_RC_MODE_MJPEGCBR:
         pRcAttr->stMjpegCbr.u32BitRate = u32BitRate;
@@ -449,18 +450,61 @@ RK_S32 TEST_VENC_SET_BitRate(VENC_RC_ATTR_S *pRcAttr, RK_U32 u32BitRate) {
         break;
       case VENC_RC_MODE_MJPEGVBR:
         pRcAttr->stMjpegVbr.u32BitRate = u32BitRate;
+        pRcAttr->stMjpegVbr.u32MaxBitRate = u32BitRateMax;
+        pRcAttr->stMjpegVbr.u32MinBitRate = u32BitRateMin;
         break;
       case VENC_RC_MODE_H264VBR:
         pRcAttr->stH264Vbr.u32BitRate = u32BitRate;
+        pRcAttr->stH264Vbr.u32MaxBitRate = u32BitRateMax;
+        pRcAttr->stH264Vbr.u32MinBitRate = u32BitRateMin;
         break;
       case VENC_RC_MODE_H265VBR:
         pRcAttr->stH265Vbr.u32BitRate = u32BitRate;
+        pRcAttr->stH265Vbr.u32MaxBitRate = u32BitRateMax;
+        pRcAttr->stH265Vbr.u32MinBitRate = u32BitRateMin;
         break;
       case VENC_RC_MODE_H264AVBR:
         pRcAttr->stH264Avbr.u32BitRate = u32BitRate;
+        pRcAttr->stH264Avbr.u32MaxBitRate = u32BitRateMax;
+        pRcAttr->stH264Avbr.u32MinBitRate = u32BitRateMin;
         break;
       case VENC_RC_MODE_H265AVBR:
         pRcAttr->stH265Avbr.u32BitRate = u32BitRate;
+        pRcAttr->stH265Avbr.u32MaxBitRate = u32BitRateMax;
+        pRcAttr->stH265Avbr.u32MinBitRate = u32BitRateMin;
+        break;
+      default:
+        return RK_ERR_VENC_NOT_SUPPORT;
+    }
+
+    return RK_SUCCESS;
+}
+
+RK_S32 TEST_VENC_SET_StatTime(VENC_RC_ATTR_S *pRcAttr, RK_U32 u32StatTime) {
+    switch (pRcAttr->enRcMode) {
+      case VENC_RC_MODE_MJPEGCBR:
+        pRcAttr->stMjpegCbr.u32StatTime = u32StatTime;
+        break;
+      case VENC_RC_MODE_H264CBR:
+        pRcAttr->stH264Cbr.u32StatTime = u32StatTime;
+        break;
+      case VENC_RC_MODE_H265CBR:
+        pRcAttr->stH265Cbr.u32StatTime = u32StatTime;
+        break;
+      case VENC_RC_MODE_MJPEGVBR:
+        pRcAttr->stMjpegVbr.u32StatTime = u32StatTime;
+        break;
+      case VENC_RC_MODE_H264VBR:
+        pRcAttr->stH264Vbr.u32StatTime = u32StatTime;
+        break;
+      case VENC_RC_MODE_H265VBR:
+        pRcAttr->stH265Vbr.u32StatTime = u32StatTime;
+        break;
+      case VENC_RC_MODE_H264AVBR:
+        pRcAttr->stH264Avbr.u32StatTime = u32StatTime;
+        break;
+      case VENC_RC_MODE_H265AVBR:
+        pRcAttr->stH265Avbr.u32StatTime = u32StatTime;
         break;
       default:
         return RK_ERR_VENC_NOT_SUPPORT;
@@ -545,6 +589,29 @@ RK_S32 TEST_VENC_SET_FrameRate(VENC_RC_ATTR_S *pRcAttr, RK_U32 u32Fps) {
         pRcAttr->stH265Avbr.u32SrcFrameRateDen = 1;
         pRcAttr->stH265Avbr.fr32DstFrameRateNum = u32Fps;
         pRcAttr->stH265Avbr.fr32DstFrameRateDen = 1;
+        break;
+      default:
+        return RK_ERR_VENC_NOT_SUPPORT;
+    }
+
+    return RK_SUCCESS;
+}
+
+RK_S32 TEST_VENC_SET_FixQp(VENC_RC_ATTR_S *pRcAttr, RK_U32 u32FixIQp,
+                                   RK_U32 u32FixPQp, RK_U32 u32FixBQp) {
+    switch (pRcAttr->enRcMode) {
+      case VENC_RC_MODE_MJPEGFIXQP:
+        pRcAttr->stMjpegFixQp.u32Qfactor = u32FixIQp;
+        break;
+      case VENC_RC_MODE_H264FIXQP:
+        pRcAttr->stH264FixQp.u32IQp = u32FixIQp;
+        pRcAttr->stH264FixQp.u32PQp = u32FixPQp;
+        pRcAttr->stH264FixQp.u32BQp = u32FixBQp;
+        break;
+      case VENC_RC_MODE_H265FIXQP:
+        pRcAttr->stH265FixQp.u32IQp = u32FixIQp;
+        pRcAttr->stH265FixQp.u32PQp = u32FixPQp;
+        pRcAttr->stH265FixQp.u32BQp = u32FixBQp;
         break;
       default:
         return RK_ERR_VENC_NOT_SUPPORT;

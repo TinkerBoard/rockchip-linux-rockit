@@ -554,7 +554,6 @@ static RK_S32 mpi_vo_init_sample(const TEST_VO_CTX_S *ctx, RK_S32 primRows , RK_
     } else {
        stLayerAttr.enPixFormat = RK_FMT_RGBA8888;
     }
-    stLayerAttr.bDoubleFrame = RK_TRUE;
     VideoCSC.enCscMatrix = VO_CSC_MATRIX_IDENTITY;
     VideoCSC.u32Contrast =  50;
     VideoCSC.u32Hue = 50;
@@ -622,7 +621,6 @@ static RK_S32 mpi_vo_init_sample(const TEST_VO_CTX_S *ctx, RK_S32 primRows , RK_
         } else {
            stLayerAttr.enPixFormat = RK_FMT_BGR888;
         }
-        stLayerAttr.bDoubleFrame = RK_TRUE;
 
         s32Ret = RK_MPI_VO_SetLayerAttr(VoLayer_second, &stLayerAttr);
         if (s32Ret != RK_SUCCESS) {

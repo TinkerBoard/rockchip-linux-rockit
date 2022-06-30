@@ -203,12 +203,14 @@ typedef struct rkVI_CHN_ATTR_S {
 typedef struct rkVI_CHN_STATUS_S {
     RK_BOOL bEnable;                    /* RO;Whether this channel is enabled */
     RK_U32  u32FrameRate;               /* RO;current frame rate */
-    RK_U32  u32LostFrame;               /* RO;Lost frame count */
+    RK_U32  u32CurFrameID;              /* RO;current frame id */
+    RK_U32  u32InputLostFrame;          /* RO;input lost frame count */
+    RK_U32  u32OutputLostFrame;         /* RO;output lost frame count */
     RK_U32  u32VbFail;                  /* RO;Video buffer malloc failure */
     SIZE_S  stSize;                     /* RO;chn output size */
 } VI_CHN_STATUS_S;
 
-/*Defines the configure parameters of AI saving file.*/
+/* Defines the configure parameters of VI saving file. */
 typedef struct rkVI_SAVE_FILE_INFO_S {
     RK_BOOL     bCfg;
     RK_CHAR     aFilePath[MAX_VI_FILE_PATH_LEN];
@@ -216,18 +218,48 @@ typedef struct rkVI_SAVE_FILE_INFO_S {
     RK_U32      u32FileSize;  /*in KB*/
 } VI_SAVE_FILE_INFO_S;
 
-/* Defines the features of an frame */
-typedef struct rkVI_FRAME_S {
-    MB_BLK            pMbBlk;                     /* R; the mediabuf of frame */
-    RK_U32            u32UniqueId;                /* R; the UniqueId of frame */
-    RK_U32            u32Fd;                      /* R; the fd of frame */
-    RK_U32            u32Len;                     /* R; the length of frame */
-    RK_S64            s64PTS;                     /* R; PTS */
-    RK_S32            s32Seq;                     /* R; the list number of frame*/
-    PIXEL_FORMAT_E    enPixelFormat;              /* R; the pixel format */
-    SIZE_S            stSize;                     /* R; the frame out put size */
-    COMPRESS_MODE_E   enCompressMode;             /* R; 256B Segment compress or no compress. */
-} VI_FRAME_S;
+/* User picture mode */
+typedef enum rk_VI_USERPIC_MODE_E {
+    VI_USERPIC_MODE_PIC = 0,
+    VI_USERPIC_MODE_BGC,
+    VI_USERPIC_MODE_BUTT,
+} VI_USERPIC_MODE_E;
+
+/* User picture background color */
+typedef struct rkVI_USERPIC_BGC_S {
+    RK_U32 u32BgColor;
+} VI_USERPIC_BGC_S;
+
+/* User picture attr */
+typedef struct rkVI_USERPIC_ATTR_S {
+    VI_USERPIC_MODE_E enUsrPicMode;
+    union {
+        VIDEO_FRAME_INFO_S stUsrPicFrm;
+        VI_USERPIC_BGC_S stUsrPicBg;
+    } unUsrPic;
+} VI_USERPIC_ATTR_S;
+
+typedef enum rkVI_CONNECT_STATE_E {
+    VI_CONNECT_STATE_UNKNOWN = 0,
+    VI_CONNECT_STATE_CONNECT,
+    VI_CONNECT_STATE_DISCONNECT,
+    VI_CONNECT_STATE_BUTT
+} VI_CONNECT_STATE_E;
+
+typedef struct rkVI_CONNECT_INFO_S {
+    RK_U32 u32Width;
+    RK_U32 u32Height;
+    PIXEL_FORMAT_E enPixFmt;
+    VI_CONNECT_STATE_E enConnect;
+} VI_CONNECT_INFO_S;
+
+typedef struct rkVI_EDID_S {
+    RK_U32 u32Pad;
+    RK_U32 u32StartBlock;
+    RK_U32 u32Blocks;
+    RK_U32 au32Reserved[5];
+    RK_U8 *pu8Edid;
+} VI_EDID_S;
 
 #define RK_ERR_VI_INVALID_PARA        RK_DEF_ERR(RK_ID_VI, RK_ERR_LEVEL_ERROR, RK_ERR_ILLEGAL_PARAM)
 #define RK_ERR_VI_INVALID_DEVID       RK_DEF_ERR(RK_ID_VI, RK_ERR_LEVEL_ERROR, RK_ERR_INVALID_DEVID)
@@ -244,7 +276,9 @@ typedef struct rkVI_FRAME_S {
 #define RK_ERR_VI_NOT_PERM            RK_DEF_ERR(RK_ID_VI, RK_ERR_LEVEL_ERROR, RK_ERR_NOT_PERM)
 /* try to enable or initialize system,device or pipe or channel, before configing attribute */
 #define RK_ERR_VI_NOT_CONFIG          RK_DEF_ERR(RK_ID_VI, RK_ERR_LEVEL_ERROR, RK_ERR_NOT_CONFIG)
-/* the channle is not existed  */
+/* channel exists */
+#define RK_ERR_VI_EXIST               RK_DEF_ERR(RK_ID_VI, RK_ERR_LEVEL_ERROR, RK_ERR_EXIST)
+/* the channel is not existed  */
 #define RK_ERR_VI_UNEXIST             RK_DEF_ERR(RK_ID_VI, RK_ERR_LEVEL_ERROR, RK_ERR_UNEXIST)
 
 #ifdef __cplusplus

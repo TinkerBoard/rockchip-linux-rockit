@@ -32,6 +32,7 @@ typedef struct _TEST_VPSS_PROC_CTX {
     RK_U32 u32RawWidth;
     RK_U32 u32RawHeight;
     RK_U32 u32RawPixelFmt;
+    RK_U32 u32SendFrameRate;
 } TEST_VPSS_PROC_CTX_S;
 
 RK_S32 TEST_VPSS_Start(VPSS_GRP VpssGrp, RK_U32 u32ChnNum,

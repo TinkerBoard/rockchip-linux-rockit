@@ -22,9 +22,9 @@
 #include <string>
 #include <cstring>
 #include <cstdlib>
+#include <random>
 #include <unistd.h>
 #include <pthread.h>
-#include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
 #include <sys/poll.h>
@@ -33,8 +33,6 @@
 #include <sys/ioctl.h>
 #include <sys/prctl.h>
 
-#include "rk_defines.h"
-#include "rk_debug.h"
 #include "rk_mpi_mb.h"
 #include "rk_mpi_sys.h"
 #include "rk_mpi_cal.h"
@@ -42,54 +40,26 @@
 #include "rk_mpi_vi.h"
 #include "rk_mpi_vpss.h"
 #include "rk_mpi_avs.h"
-#include "rk_comm_avs.h"
 #include "rk_mpi_vo.h"
-#include "rk_comm_vo.h"
+
+#include "test_common.h"
 #include "test_comm_argparse.h"
-
-
-/* for RK356x */
-#define RK356X_VO_DEV_HD0          0
-#define RK356X_VO_DEV_HD1          1
-#define RK356X_VOP_LAYER_CLUSTER_0 0
-#define RK356X_VOP_LAYER_CLUSTER_1 2
-#define RK356X_VOP_LAYER_ESMART_0  4
-#define RK356X_VOP_LAYER_ESMART_1  5
-#define RK356X_VOP_LAYER_SMART_0   6
-#define RK356X_VOP_LAYER_SMART_1   7
+#include "test_comm_vo.h"
+#include "test_comm_sys.h"
+#include "test_comm_utils.h"
 
 /* for RK3588 */
 #define RK3588_VO_DEV_HDMI         0
 #define RK3588_VO_DEV_MIPI         3
 
-#define AVS_STITCH_NUM 6
+#define MAX_FILE_NAME_LEN          64
+#define MAX_FILE_PATH_LEN          256
 
-#ifndef RK_SAFE_FREE
-#define RK_SAFE_FREE(p)    { if (p) {free(p); (p)=RK_NULL;} }
-#endif
+#define AVS_GET_CHN_FRAME_TIMEOUT_MS 200
+#define VO_RGA 0
+#define ENABLE_COM_POOL 0
 
-#ifndef RK_SAFE_DELETE
-#define RK_SAFE_DELETE(p)  { if (p) {delete(p); (p)=RK_NULL;} }
-#endif
-
-#ifndef RK_AVS_RK356x
-#define RK_AVS_RK356x 0
-#endif
-
-#ifndef RK_AVS_RK3588
-#define RK_AVS_RK3588 1
-#endif
-
-#define MAX_FILE_NAME_LEN 64
-#define MAX_FILE_PATH_LEN 256
-
-#ifndef rk_safe_free
-#define rk_safe_free(p)              { if (p) {free(p); (p)=RK_NULL;} }
-#endif
-
-#ifndef rk_safe_delete
-#define rk_safe_delete(p)            { if (p) {delete(p); (p)=RK_NULL;} }
-#endif
+static RK_BOOL bExit = RK_FALSE;
 
 typedef struct rkVI_CFG_S {
     const RK_CHAR *dstFilePath;
@@ -105,16 +75,8 @@ typedef struct rkVI_CFG_S {
     VI_CHN_STATUS_S     stViChnStatus;
     VI_DEV_BIND_PIPE_S  stBindPipe;
     VI_SAVE_FILE_INFO_S stDebugFile;
-    VI_FRAME_S          stViFrame;
+    VIDEO_FRAME_INFO_S  stViFrame;
 } VI_CFG_S;
-
-typedef struct rkVPSS_CFG_S {
-    VPSS_GRP s32GrpId;
-    VPSS_CHN s32ChnId;
-    RK_U32 u32VpssChnCnt;
-    VPSS_GRP_ATTR_S stVpssGrpAttr;
-    VPSS_CHN_ATTR_S stVpssChnAttr[VPSS_MAX_CHN_NUM];
-} VPSS_CFG_S;
 
 typedef struct rkAVS_CFG_S {
     AVS_GRP         s32GrpId;
@@ -122,9 +84,10 @@ typedef struct rkAVS_CFG_S {
     AVS_PIPE        s32PipeId;
     RK_U32          u32AvsPipeCnt;
     RK_U32          u32AvsChnCnt;
+    RK_U32          u32InW;
+    RK_U32          u32InH;
     RK_U32          u32OutW;
     RK_U32          u32OutH;
-    COMPRESS_MODE_E enOutCmpMode;
     AVS_MOD_PARAM_S stAvsModParam;
     AVS_GRP_ATTR_S  stAvsGrpAttr;
     AVS_OUTPUT_ATTR_S stAvsOutAttr;
@@ -141,154 +104,32 @@ typedef struct _rkVO_CFG_S {
 } VO_CFG_S;
 
 typedef enum rkTEST_MODE_E {
-    TEST_MODE_AVS_ONLY       = 0,
-    TEST_MODE_VI_VPSS_VO     = 1,
-    TEST_MODE_VI_AVS_VO      = 2,
-    TEST_MODE_AFBC_VI_AVS_VO = 3,
+    TEST_MODE_AVS_BLEND       = 0,
+    TEST_MODE_AVS_NOBLEND     = 1,
+    TEST_MODE_VI_AVS_VO       = 2
 } TEST_MODE_E;
 
-typedef struct _rkMPI_CTX_S {
-    RK_BOOL bThreadExit;
-    char srcPath[MAX_FILE_PATH_LEN];
-    char dstPath[MAX_FILE_PATH_LEN];
-    FILE *srcFp[AVS_PIPE_NUM];
-    FILE *dstSaveFp;
+typedef enum rkPARAMS_SOURCES_E {
+    PARAMS_SOURCES_MESH       = 0,
+    PARAMS_SOURCES_CALIB      = 1
+} PARAMS_SOURCES_E;
 
-    VI_CFG_S   viContext;
-    VPSS_CFG_S vpssContext;
-    AVS_CFG_S  avsContext;
-    VO_CFG_S   voContext;
-} MPI_CTX_S;
+typedef struct _rkTEST_AVS_CTX_S {
+    char             srcFilePath[MAX_FILE_PATH_LEN];
+    char             dstFilePath[MAX_FILE_PATH_LEN];
+    FILE            *srcFp[AVS_PIPE_NUM];
+    FILE            *dstSaveFp;
 
-static RK_U32 test_get_file_len(const RK_CHAR* File) {
-    FILE* FILE;
-    RK_U32 u32FileLen;
-    RK_S32 s32Ret;
+    AVS_CFG_S        avsContext;
+    TEST_MODE_E      enTestMode;
+    PARAMS_SOURCES_E enParamsSources;
+    COMPRESS_MODE_E  enCompressMode;
+    RK_S32           s32FrameSync;
+    RK_S32           s32LoopCount;
+    RK_U32           enVoDevType;    /*RK3588: 0: HDMI, 3: MIPI*/
 
-    FILE = fopen(File, "rb");
-
-    if (NULL != FILE) {
-        s32Ret = fseek(FILE, 0L, SEEK_END);
-        if (0 != s32Ret) {
-            RK_LOGE("fseek end err!");
-            fclose(FILE);
-            return 0;
-        }
-
-        u32FileLen = ftell(FILE);
-
-        s32Ret = fseek(FILE, 0L, SEEK_SET);
-        if (0 != s32Ret) {
-            RK_LOGE("fseek begin err!");
-            fclose(FILE);
-            return 0;
-        }
-        fclose(FILE);
-    } else {
-        RK_LOGE("open file %s fail!", File);
-        u32FileLen = 0;
-    }
-
-    return u32FileLen;
-}
-
-static RK_S32 test_open_and_read_file(const RK_CHAR *path, RK_VOID *pu8SrcData, RK_U32 u32SrcSize) {
-    FILE  *pFile        = RK_NULL;
-    RK_U32 u32ReadSize  = 0;
-
-    pFile = fopen(path, "rb+");
-    if (pFile == RK_NULL) {
-        RK_LOGE("open path %s failed because %s.", path, strerror(errno));
-        return RK_ERR_NULL_PTR;
-    }
-    if (pFile) {
-         u32ReadSize = fread(pu8SrcData, 1, u32SrcSize, pFile);
-         fflush(pFile);
-         fclose(pFile);
-    }
-    RK_LOGD("unit_test_open_source u32ReadSize:%d", u32ReadSize);
-    if (u32ReadSize != u32SrcSize) {
-        RK_LOGE("read error read %d, request %d", u32ReadSize, u32SrcSize);
-        return RK_ERR_NULL_PTR;
-    }
-    return RK_SUCCESS;
-}
-
-static RK_S32 test_avs_generate_param_source(const char *srcFilePath, MB_BLK *pstSrcBlk, RK_U32 u32SrcSize) {
-    RK_S32 s32Ret            = RK_SUCCESS;
-    RK_VOID  *pSrcData       = RK_NULL;
-
-    s32Ret = RK_MPI_SYS_MmzAlloc(pstSrcBlk, RK_NULL, RK_NULL, u32SrcSize);
-    if (s32Ret == RK_SUCCESS) {
-       pSrcData = RK_MPI_MB_Handle2VirAddr(*pstSrcBlk);
-       s32Ret = test_open_and_read_file(srcFilePath, pSrcData, u32SrcSize);
-       RK_MPI_SYS_MmzFlushCache(*pstSrcBlk, RK_FALSE);
-    }
-    return s32Ret;
-}
-
-static RK_S32 create_vpss(VPSS_CFG_S *ctx) {
-    RK_S32 s32Ret = RK_SUCCESS;
-    VPSS_CHN VpssChn[VPSS_MAX_CHN_NUM] = { VPSS_CHN0, VPSS_CHN1, VPSS_CHN2, VPSS_CHN3 };
-    VPSS_GRP VpssGrp = ctx->s32GrpId;
-
-    s32Ret = RK_MPI_VPSS_CreateGrp(VpssGrp, &ctx->stVpssGrpAttr);
-    if (s32Ret != RK_SUCCESS) {
-        return s32Ret;
-    }
-
-    for (RK_S32 i = 0; i < ctx->u32VpssChnCnt; i++) {
-        s32Ret = RK_MPI_VPSS_SetChnAttr(VpssGrp, VpssChn[i], &ctx->stVpssChnAttr[i]);
-        if (s32Ret != RK_SUCCESS) {
-            return s32Ret;
-        }
-        s32Ret = RK_MPI_VPSS_EnableChn(VpssGrp, VpssChn[i]);
-        if (s32Ret != RK_SUCCESS) {
-            return s32Ret;
-        }
-    }
-
-    s32Ret = RK_MPI_VPSS_EnableBackupFrame(VpssGrp);
-    if (s32Ret != RK_SUCCESS) {
-        return s32Ret;
-    }
-
-    s32Ret = RK_MPI_VPSS_StartGrp(VpssGrp);
-    if (s32Ret != RK_SUCCESS) {
-        return s32Ret;
-    }
-
-    return  RK_SUCCESS;
-}
-
-static RK_S32 destroy_vpss(VPSS_CFG_S *ctx) {
-    RK_S32 s32Ret = RK_SUCCESS;
-    VPSS_CHN VpssChn[VPSS_MAX_CHN_NUM] = { VPSS_CHN0, VPSS_CHN1, VPSS_CHN2, VPSS_CHN3 };
-    VPSS_GRP VpssGrp = ctx->s32GrpId;
-    s32Ret = RK_MPI_VPSS_StopGrp(VpssGrp);
-    if (s32Ret != RK_SUCCESS) {
-        return s32Ret;
-    }
-
-    for (RK_S32 i = 0; i < ctx->u32VpssChnCnt; i++) {
-        s32Ret = RK_MPI_VPSS_DisableChn(VpssGrp, VpssChn[i]);
-        if (s32Ret != RK_SUCCESS) {
-            return s32Ret;
-        }
-    }
-
-    s32Ret = RK_MPI_VPSS_DisableBackupFrame(VpssGrp);
-    if (s32Ret != RK_SUCCESS) {
-        return s32Ret;
-    }
-
-    s32Ret = RK_MPI_VPSS_DestroyGrp(VpssGrp);
-    if (s32Ret != RK_SUCCESS) {
-        return s32Ret;
-    }
-
-    return  RK_SUCCESS;
-}
+    MB_CONFIG_S      stMbConfig;
+} TEST_AVS_CTX_S;
 
 static RK_S32 destroy_vo(VO_CFG_S *ctx) {
     RK_S32 s32Ret = RK_SUCCESS;
@@ -318,14 +159,13 @@ static RK_S32 create_vo(VO_CFG_S *ctx) {
         return s32Ret;
     }
 
-#if RK_AVS_RK356x
-    VoPubAttr.enIntfType = VO_INTF_HDMI;
-    VoPubAttr.enIntfSync = VO_OUTPUT_1080P60;
-#endif
-#if RK_AVS_RK3588
-    VoPubAttr.enIntfType = VO_INTF_HDMI;
-    VoPubAttr.enIntfSync = VO_OUTPUT_1080P60;
-#endif
+    if (RK3588_VO_DEV_HDMI == VoDev) {
+        VoPubAttr.enIntfType = VO_INTF_HDMI;
+        VoPubAttr.enIntfSync = VO_OUTPUT_1080P60;
+    } else if (RK3588_VO_DEV_MIPI == VoDev) {
+        VoPubAttr.enIntfType = VO_INTF_MIPI;
+        VoPubAttr.enIntfSync = VO_OUTPUT_DEFAULT;
+    }
 
     s32Ret = RK_MPI_VO_SetPubAttr(VoDev, &VoPubAttr);
     if (s32Ret != RK_SUCCESS) {
@@ -362,6 +202,13 @@ static RK_S32 create_vo(VO_CFG_S *ctx) {
         return RK_FAILURE;
     }
 
+#if VO_RGA
+    s32Ret = RK_MPI_VO_SetLayerSpliceMode(VoLayer, VO_SPLICE_MODE_RGA);
+    if (s32Ret != RK_SUCCESS) {
+        RK_LOGE("RK_MPI_VO_SetLayerSpliceMode failed: %#x", s32Ret);
+        return RK_FAILURE;
+    }
+#endif
 
     s32Ret = RK_MPI_VO_EnableLayer(VoLayer);
     if (s32Ret != RK_SUCCESS) {
@@ -448,14 +295,19 @@ __FAILED:
 }
 
 static RK_S32 destroy_vi(VI_CFG_S *ctx) {
-    RK_S32 s32Ret = RK_FAILURE;
+    RK_S32 s32Ret = RK_SUCCESS;
     s32Ret = RK_MPI_VI_DisableChn(ctx->s32PipeId, ctx->s32ChnId);
-    RK_LOGE("RK_MPI_VI_DisableChn %x", s32Ret);
-
+    if (RK_SUCCESS != s32Ret) {
+        RK_LOGE("RK_MPI_VI_DisableChn failed with %#x!\n", s32Ret);
+        return s32Ret;
+    }
     s32Ret = RK_MPI_VI_DisableDev(ctx->s32DevId);
-    RK_LOGE("RK_MPI_VI_DisableDev %x", s32Ret);
+    if (RK_SUCCESS != s32Ret) {
+        RK_LOGE("RK_MPI_VI_DisableDev failed with %#x!\n", s32Ret);
+        return s32Ret;
+    }
 
-    return s32Ret;
+    return RK_SUCCESS;
 }
 
 static RK_S32 create_avs(AVS_CFG_S *ctx) {
@@ -498,15 +350,15 @@ __FAILED:
 static RK_S32 destroy_avs(AVS_CFG_S *ctx) {
     RK_S32 s32Ret = RK_FAILURE;
 
-    s32Ret = RK_MPI_AVS_StopGrp(ctx->s32GrpId);
-    if (RK_SUCCESS != s32Ret) {
-        RK_LOGE("RK_MPI_AVS_StopGrp failed with %#x!\n", s32Ret);
-        goto __FAILED;
-    }
-
     s32Ret = RK_MPI_AVS_DisableChn(ctx->s32GrpId, ctx->s32ChnId);
     if (RK_SUCCESS != s32Ret) {
         RK_LOGE("RK_MPI_AVS_DisableChn failed with %#x!\n", s32Ret);
+        goto __FAILED;
+    }
+
+    s32Ret = RK_MPI_AVS_StopGrp(ctx->s32GrpId);
+    if (RK_SUCCESS != s32Ret) {
+        RK_LOGE("RK_MPI_AVS_StopGrp failed with %#x!\n", s32Ret);
         goto __FAILED;
     }
 
@@ -520,714 +372,359 @@ __FAILED:
     return s32Ret;
 }
 
+static RK_S32 TEST_AVS_ComCreateFrame(TEST_AVS_CTX_S *pstCtx, VIDEO_FRAME_INFO_S **pstVideoFrames) {
+    RK_S32 s32Ret = RK_SUCCESS;
+    PIC_BUF_ATTR_S stPicBufAttr;
+    RK_CHAR cWritePath[MAX_FILE_PATH_LEN] = {0};
+    RK_S32 i = 0;
 
-static RK_VOID* avs_send_get_frame_thread(RK_VOID *pArgs) {
-    prctl(PR_SET_NAME, "avs_send_get_frame_thread");
-
-    MPI_CTX_S *pstCtx = reinterpret_cast<MPI_CTX_S *>(pArgs);
-    RK_S32     s32Ret = RK_SUCCESS;
-    MB_BLK  srcBlk[2] = { MB_INVALID_HANDLE, MB_INVALID_HANDLE };
-    RK_S32 s32ReadLen = 0;
-    RK_S32 s32FrameInputCount = 0;
-    RK_S32 s32FrameOutputCount = 0;
-    VIDEO_FRAME_INFO_S frameIn[2] = { 0, 0 };
-    VIDEO_FRAME_INFO_S frameOut = {0};
-    PIC_BUF_ATTR_S  stPicBufAttr;
-    MB_PIC_CAL_S    stMbPicCalResult;
-
-    stPicBufAttr.u32Width = 2688;
-    stPicBufAttr.u32Height = 1520;
-    stPicBufAttr.enCompMode = COMPRESS_MODE_NONE;
+    stPicBufAttr.u32Width = pstCtx->avsContext.u32InW;
+    stPicBufAttr.u32Height = pstCtx->avsContext.u32InH;
+    stPicBufAttr.enCompMode = pstCtx->enCompressMode;
     stPicBufAttr.enPixelFormat = RK_FMT_YUV420SP;
-    s32Ret = RK_MPI_CAL_VGS_GetPicBufferSize(&stPicBufAttr, &stMbPicCalResult);
-    if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("get picture buffer size failed. err 0x%x", s32Ret);
-        return RK_NULL;
-    }
-
-    for (RK_S32 i = 0; i < pstCtx->avsContext.u32AvsPipeCnt; i++) {
-        RK_MPI_MMZ_Alloc(&srcBlk[i], stMbPicCalResult.u32MBSize, RK_MMZ_ALLOC_CACHEABLE);
-    }
-
-    while (pstCtx->bThreadExit != RK_TRUE) {
-        for (RK_S32 i = 0; i < pstCtx->avsContext.u32AvsPipeCnt; i++) {
-            if (pstCtx->srcFp[i] != RK_NULL) {
-                s32Ret = fseek(pstCtx->srcFp[i], 0, SEEK_SET);
-                if (s32Ret != 0) {
-                    break;
-                }
-                s32ReadLen = fread(RK_MPI_MB_Handle2VirAddr(srcBlk[i]),
-                                   1, stMbPicCalResult.u32MBSize, pstCtx->srcFp[i]);
-                if (s32ReadLen <= 0) {
-                    RK_LOGE("read size is not enough. read %d, request %d",
-                            s32ReadLen, stMbPicCalResult.u32MBSize);
-                    break;
-                }
-            }
-            frameIn[i].stVFrame.pMbBlk = srcBlk;
-            frameIn[i].stVFrame.u32Width = 2688;
-            frameIn[i].stVFrame.u32Height = 1520;
-            frameIn[i].stVFrame.u32VirWidth = stMbPicCalResult.u32VirWidth;
-            frameIn[i].stVFrame.u32VirHeight = stMbPicCalResult.u32VirHeight;
-            frameIn[i].stVFrame.enCompressMode = COMPRESS_MODE_NONE;
-            frameIn[i].stVFrame.enPixelFormat = RK_FMT_YUV420SP;
+    for (; i < pstCtx->avsContext.u32AvsPipeCnt; i++) {
+        s32Ret = TEST_SYS_CreateVideoFrame(&stPicBufAttr, pstVideoFrames[i]);
+        if (s32Ret != RK_SUCCESS) {
+            goto __FAILED;
         }
-        for (RK_U32 i = 0; i < pstCtx->avsContext.u32AvsPipeCnt; i++) {
-            s32Ret = RK_MPI_AVS_SendPipeFrame(pstCtx->avsContext.s32GrpId, i, &frameIn[i], -1);
+
+        if (pstCtx->srcFilePath != RK_NULL) {
+            if (pstCtx->enCompressMode == COMPRESS_MODE_NONE) {
+                snprintf(cWritePath, sizeof(cWritePath),
+                        "%simage_data/camera%d_%dx%d_nv12.yuv",
+                        pstCtx->srcFilePath, i, pstCtx->avsContext.u32InW, pstCtx->avsContext.u32InH);
+            } else if (pstCtx->enCompressMode == COMPRESS_AFBC_16x16) {
+                snprintf(cWritePath, sizeof(cWritePath),
+                        "%safbc_image_data/camera%d_%dx%d_nv12_afbc.yuv",
+                        pstCtx->srcFilePath, i, pstCtx->avsContext.u32InW, pstCtx->avsContext.u32InH);
+            }
+            RK_LOGD("fread %s!", cWritePath);
+            s32Ret = TEST_COMM_FileReadOneFrame(cWritePath, pstVideoFrames[i]);
             if (s32Ret != RK_SUCCESS) {
-                RK_MPI_MB_ReleaseMB(srcBlk);
-                break;
-            }
-            s32FrameInputCount++;
-        }
-        for (RK_S32 i = 0; i < pstCtx->avsContext.u32AvsChnCnt; i++) {
-            s32Ret = RK_MPI_AVS_GetChnFrame(pstCtx->avsContext.s32GrpId, i, &frameOut, -1);
-            if (s32Ret != RK_SUCCESS) {
-                break;
-            }
-            s32FrameOutputCount++;
-            RK_LOGI("get grp[%d] chn[%d] frame %p length %d",
-                    pstCtx->avsContext.s32GrpId, i,
-                    frameOut.stVFrame.pMbBlk, stMbPicCalResult.u32MBSize);
-            if (pstCtx->dstSaveFp != RK_NULL) {
-                fwrite(RK_MPI_MB_Handle2VirAddr(frameOut.stVFrame.pMbBlk),
-                        1, stMbPicCalResult.u32MBSize, pstCtx->dstSaveFp);
-                fflush(pstCtx->dstSaveFp);
+                goto __FAILED;
             }
         }
+        RK_MPI_SYS_MmzFlushCache(pstVideoFrames[i]->stVFrame.pMbBlk, RK_FALSE);
     }
 
-    return RK_NULL;
+    return s32Ret;
+
+__FAILED:
+    for (; i >= 0; i--) {
+        RK_MPI_MB_ReleaseMB(pstVideoFrames[i]->stVFrame.pMbBlk);
+    }
+
+    return s32Ret;
 }
 
-static RK_S32 test_avs_get_release_frame_loop(RK_VOID) {
-    RK_S32 s32Ret = RK_FAILURE;
-    AVS_CFG_S *pstAvsCtx = reinterpret_cast<AVS_CFG_S *>(malloc(sizeof(AVS_CFG_S)));
-    MPI_CTX_S *avsGetReleaseCtx = reinterpret_cast<MPI_CTX_S *>(malloc(sizeof(MPI_CTX_S)));
+static RK_S32 TEST_AVS_ComSendFrame(TEST_AVS_CTX_S *pstCtx, VIDEO_FRAME_INFO_S **pstVideoFrames) {
+    RK_S32 s32Ret = RK_SUCCESS;
+    RK_S32 i = 0;
 
-    RK_U32 u32LUTSize = 0;
-    MB_BLK pLUTVirAddr[AVS_PIPE_NUM] = { RK_NULL };
-    memset(pstAvsCtx, 0, sizeof(AVS_CFG_S));
-    memset(avsGetReleaseCtx, 0, sizeof(avsGetReleaseCtx));
+    for (; i < pstCtx->avsContext.u32AvsPipeCnt; i++) {
+        s32Ret = RK_MPI_AVS_SendPipeFrame(pstCtx->avsContext.s32GrpId, i, pstVideoFrames[i], -1);
+        if (s32Ret != RK_SUCCESS) {
+            goto __FAILED;
+        }
+    }
+
+    return s32Ret;
+
+__FAILED:
+    for (; i >= 0; i--) {
+        RK_MPI_MB_ReleaseMB(pstVideoFrames[i]->stVFrame.pMbBlk);
+    }
+
+    return s32Ret;
+}
+
+static RK_S32 TEST_AVS_ComGetChnFrame(TEST_AVS_CTX_S *pstCtx, VIDEO_FRAME_INFO_S **pstVideoFrames) {
+    RK_S32 s32Ret = RK_SUCCESS;
+
+    for (RK_S32 i = 0; i < pstCtx->avsContext.u32AvsChnCnt; i++) {
+        s32Ret = RK_MPI_AVS_GetChnFrame(pstCtx->avsContext.s32GrpId, i,
+                                        pstVideoFrames[i], AVS_GET_CHN_FRAME_TIMEOUT_MS);
+        if (s32Ret != RK_SUCCESS) {
+            return RK_SUCCESS;
+        }
+    }
+
+    return s32Ret;
+}
+
+static RK_S32 TEST_AVS_ComChnSetZoom(TEST_AVS_CTX_S *pstCtx) {
+    RK_S32 s32Ret = RK_SUCCESS;
+    AVS_CHN_ATTR_S stChnAttr;
+    std::random_device rd;
+    std::mt19937 eng(rd());
+    std::uniform_int_distribution<RK_U32> multiple(1, 10);
+
+    s32Ret = RK_MPI_AVS_GetChnAttr(pstCtx->avsContext.s32GrpId, 0, &stChnAttr);
+    if (s32Ret != RK_SUCCESS) {
+        RK_LOGE("RK_MPI_AVS_GetChnAttr failed with %#x!", s32Ret);
+        return s32Ret;
+    }
+
+    stChnAttr.u32Width = pstCtx->avsContext.u32OutW / 10 * multiple(rd);
+    stChnAttr.u32Height = pstCtx->avsContext.u32OutH / 10 * multiple(rd);
+    RK_LOGI("set random u32Width: %d, u32Height: %d", stChnAttr.u32Width, stChnAttr.u32Height);
+
+    s32Ret = RK_MPI_AVS_SetChnAttr(pstCtx->avsContext.s32GrpId, 0, &stChnAttr);
+    if (s32Ret != RK_SUCCESS) {
+        RK_LOGE("RK_MPI_AVS_SetChnAttr failed with %#x!");
+        return s32Ret;
+    }
+
+    return s32Ret;
+}
+
+static RK_S32 TEST_AVS_8_Equirectangular(TEST_AVS_CTX_S *ctx) {
+    RK_S32     s32Ret = RK_FAILURE;
+    AVS_CFG_S *pstAvsCtx = reinterpret_cast<AVS_CFG_S *>(&(ctx->avsContext));
+    const RK_CHAR *cTestDataPath = "/data/avs/8x_equirectangular/";
+    RK_CHAR cWritePath[128] = {0};
+    VIDEO_FRAME_INFO_S **stPipeFrameInfos;
+    VIDEO_FRAME_INFO_S **stChnFrameInfos;
+
+    snprintf(ctx->srcFilePath, sizeof(ctx->srcFilePath),
+             "%s%s", cTestDataPath, "input_image/");
+    snprintf(ctx->dstFilePath, sizeof(ctx->dstFilePath),
+             "%s%s", cTestDataPath, "output_res/");
 
     /* avs config init */
-    pstAvsCtx->s32GrpId = 0;
-    pstAvsCtx->s32PipeId = 0;
-    pstAvsCtx->s32ChnId = 0;
-    pstAvsCtx->u32AvsPipeCnt = AVS_STITCH_NUM;
-    pstAvsCtx->u32AvsChnCnt = 1;
-    if (AVS_STITCH_NUM == 2) {
-        pstAvsCtx->u32OutW = 5088;
-        pstAvsCtx->u32OutH = 1520;
-        snprintf(pstAvsCtx->stAvsGrpAttr.stLUT.aFilePath,
-            sizeof("/usr/data/demo_data/hk_data/mesh_data_multiBand/"),
-            "/usr/data/demo_data/hk_data/mesh_data_multiBand/");
-    } else if (AVS_STITCH_NUM == 4) {
-        pstAvsCtx->u32OutW = 5440;
-        pstAvsCtx->u32OutH = 2700;
-        snprintf(pstAvsCtx->stAvsGrpAttr.stLUT.aFilePath,
-            sizeof("/usr/data/demo_data/qk_data/mesh_data_multiBand/"),
-            "/usr/data/demo_data/qk_data/mesh_data_multiBand/");
-    } else if (AVS_STITCH_NUM == 6) {
-        pstAvsCtx->u32OutW = 8192;
-        pstAvsCtx->u32OutH = 2700;
-        snprintf(pstAvsCtx->stAvsGrpAttr.stLUT.aFilePath,
-            sizeof("/usr/data/demo_data/6x/multiBand_8192x2700/"),
-            "/usr/data/demo_data/6x/multiBand_8192x2700/");
-    }
-    pstAvsCtx->stAvsGrpAttr.stLUT.enAccuracy                 = AVS_LUT_ACCURACY_HIGH;
-    pstAvsCtx->enOutCmpMode                                  = COMPRESS_MODE_NONE;
+    pstAvsCtx->s32GrpId      = 0;
+    pstAvsCtx->s32ChnId      = 0;
+    pstAvsCtx->u32AvsPipeCnt = 8;
+    pstAvsCtx->u32AvsChnCnt  = 1;
+    pstAvsCtx->u32InW        = 2560;
+    pstAvsCtx->u32InH        = 1520;
+    pstAvsCtx->u32OutW       = 8192;
+    pstAvsCtx->u32OutH       = 3840;
 
-    pstAvsCtx->stAvsModParam.u32WorkingSetSize = 67 * 1024;
+    snprintf(pstAvsCtx->stAvsGrpAttr.stOutAttr.stCalib.aCalibFilePath,
+             sizeof(pstAvsCtx->stAvsGrpAttr.stOutAttr.stCalib.aCalibFilePath),
+             "%s%s", cTestDataPath, "avs_calib/calib_file.pto");
+    snprintf(pstAvsCtx->stAvsGrpAttr.stOutAttr.stCalib.aMeshAlphaPath,
+             sizeof(pstAvsCtx->stAvsGrpAttr.stOutAttr.stCalib.aCalibFilePath),
+             "%s%s", cTestDataPath, "avs_mesh/");
+
+    pstAvsCtx->stAvsGrpAttr.stLUT.enAccuracy                 = AVS_LUT_ACCURACY_HIGH;
+    pstAvsCtx->stAvsModParam.u32WorkingSetSize               = 67 * 1024;
+    pstAvsCtx->stAvsModParam.enMBSource                      = MB_SOURCE_PRIVATE;
     pstAvsCtx->stAvsGrpAttr.enMode                           = AVS_MODE_BLEND;
     pstAvsCtx->stAvsGrpAttr.u32PipeNum                       = pstAvsCtx->u32AvsPipeCnt;
     pstAvsCtx->stAvsGrpAttr.stGainAttr.enMode                = AVS_GAIN_MODE_AUTO;
 
     pstAvsCtx->stAvsGrpAttr.stOutAttr.enPrjMode              = AVS_PROJECTION_EQUIRECTANGULAR;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stCenter.s32X          = pstAvsCtx->u32OutW / 2;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stCenter.s32Y          = pstAvsCtx->u32OutH / 2;
     pstAvsCtx->stAvsGrpAttr.stOutAttr.stFOV.u32FOVX          = 36000;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stFOV.u32FOVY          = 18000;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Roll  = 9000;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Pitch = 9000;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stFOV.u32FOVY          = 8500;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stCenter.s32X          = 4096;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stCenter.s32Y          = 1800;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Roll  = 0;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Pitch = 0;
     pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Yaw   = 0;
     pstAvsCtx->stAvsGrpAttr.stOutAttr.stRotation.s32Roll     = 0;
     pstAvsCtx->stAvsGrpAttr.stOutAttr.stRotation.s32Pitch    = 0;
     pstAvsCtx->stAvsGrpAttr.stOutAttr.stRotation.s32Yaw      = 0;
 
-    pstAvsCtx->stAvsGrpAttr.bSyncPipe                     = RK_TRUE;
+    pstAvsCtx->stAvsGrpAttr.bSyncPipe                     = (RK_BOOL)ctx->s32FrameSync;
     pstAvsCtx->stAvsGrpAttr.stFrameRate.s32SrcFrameRate   = -1;
     pstAvsCtx->stAvsGrpAttr.stFrameRate.s32DstFrameRate   = -1;
 
-    pstAvsCtx->stAvsChnAttr[0].enCompressMode              = pstAvsCtx->enOutCmpMode;
+    pstAvsCtx->stAvsChnAttr[0].enCompressMode              = ctx->enCompressMode;
     pstAvsCtx->stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
     pstAvsCtx->stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
-    pstAvsCtx->stAvsChnAttr[0].u32Depth                    = 0;
+    pstAvsCtx->stAvsChnAttr[0].u32Depth                    = 3;
     pstAvsCtx->stAvsChnAttr[0].u32Width                    = pstAvsCtx->u32OutW;
     pstAvsCtx->stAvsChnAttr[0].u32Height                   = pstAvsCtx->u32OutH;
     pstAvsCtx->stAvsChnAttr[0].enDynamicRange              = DYNAMIC_RANGE_SDR8;
 
+#if ENABLE_COM_POOL
+    pstAvsCtx->stAvsModParam.enMBSource = MB_SOURCE_COMMON;
+    PIC_BUF_ATTR_S stBufAttr;
+    MB_PIC_CAL_S stPicCalResult;
+    memset(&stBufAttr, 0, sizeof(PIC_BUF_ATTR_S));
+    memset(&stPicCalResult, 0, sizeof(MB_PIC_CAL_S));
+
+    stBufAttr.u32Width = pstAvsCtx->stAvsChnAttr[0].u32Width;
+    stBufAttr.u32Height = pstAvsCtx->stAvsChnAttr[0].u32Width;
+    stBufAttr.enPixelFormat = RK_FMT_YUV420SP;
+    stBufAttr.enCompMode = pstAvsCtx->stAvsChnAttr[0].enCompressMode;
+    s32Ret = RK_MPI_CAL_VGS_GetPicBufferSize(&stBufAttr, &stPicCalResult);
+    if (s32Ret != RK_SUCCESS) {
+        return s32Ret;
+    }
+    ctx->stMbConfig.astCommPool[0].u64MBSize = stPicCalResult.u32MBSize;
+    ctx->stMbConfig.astCommPool[0].u32MBCnt = 8;
+    ctx->stMbConfig.astCommPool[0].enRemapMode = MB_REMAP_MODE_CACHED;
+    ctx->stMbConfig.astCommPool[0].enAllocType = MB_ALLOC_TYPE_DMA;
+    ctx->stMbConfig.astCommPool[0].enDmaType = MB_DMA_TYPE_NONE;
+
+    s32Ret = RK_MPI_MB_SetConfig(&ctx->stMbConfig);
+    if (s32Ret != RK_SUCCESS) {
+        return s32Ret;
+    }
+
+    s32Ret = RK_MPI_MB_Init();
+    if (s32Ret != RK_SUCCESS) {
+        return s32Ret;
+    }
+#endif
+
     /* avs create */
     s32Ret = create_avs(pstAvsCtx);
     if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("create avs [%d, %d, %d] error %x: ",
+        RK_LOGE("create avs [%d, %d, %d] failed %x",
                 pstAvsCtx->s32GrpId,
                 pstAvsCtx->s32PipeId,
                 pstAvsCtx->s32ChnId,
                 s32Ret);
         return s32Ret;
     }
-    /* do somethings */
 
-    MB_BLK           srcBlk[2] = { MB_INVALID_HANDLE, MB_INVALID_HANDLE };
-    RK_S32           s32ReadLen = 0;
-    RK_S32           s32FrameInputCount = 0;
-    RK_S32           s32FrameOutputCount = 0;
-    VIDEO_FRAME_INFO_S frameIn[2] = { 0, 0 };
-    VIDEO_FRAME_INFO_S frameOut = {0};
-    PIC_BUF_ATTR_S  stSrcPicBufAttr;
-    MB_PIC_CAL_S    stSrcMbPicCalResult;
-    PIC_BUF_ATTR_S  stDstPicBufAttr;
-    MB_PIC_CAL_S    stDstMbPicCalResult;
 
-    stSrcPicBufAttr.u32Width = 2688;
-    stSrcPicBufAttr.u32Height = 1520;
-    stSrcPicBufAttr.enCompMode = COMPRESS_MODE_NONE;
-    stSrcPicBufAttr.enPixelFormat = RK_FMT_YUV420SP;
-    s32Ret = RK_MPI_CAL_VGS_GetPicBufferSize(&stSrcPicBufAttr, &stSrcMbPicCalResult);
-    if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("get picture buffer size failed. err 0x%x", s32Ret);
-        return RK_NULL;
+    stPipeFrameInfos = reinterpret_cast<VIDEO_FRAME_INFO_S **>(
+                        malloc(sizeof(VIDEO_FRAME_INFO_S *) * AVS_PIPE_NUM));
+    stChnFrameInfos = reinterpret_cast<VIDEO_FRAME_INFO_S **>(
+                        malloc(sizeof(VIDEO_FRAME_INFO_S *) * AVS_MAX_CHN_NUM));
+    for (RK_S32 i = 0; i < AVS_PIPE_NUM; i++) {
+        stPipeFrameInfos[i] = reinterpret_cast<VIDEO_FRAME_INFO_S *>(malloc(sizeof(VIDEO_FRAME_INFO_S)));
+        memset(stPipeFrameInfos[i], 0, sizeof(VIDEO_FRAME_INFO_S));
     }
-    stDstPicBufAttr.u32Width = 5088;
-    stDstPicBufAttr.u32Height = 1520;
-    stDstPicBufAttr.enCompMode = COMPRESS_MODE_NONE;
-    stDstPicBufAttr.enPixelFormat = RK_FMT_YUV420SP;
-    s32Ret = RK_MPI_CAL_VGS_GetPicBufferSize(&stDstPicBufAttr, &stDstMbPicCalResult);
-    if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("get picture buffer size failed. err 0x%x", s32Ret);
-        return RK_NULL;
+    for (RK_S32 i = 0; i < AVS_MAX_CHN_NUM; i++) {
+        stChnFrameInfos[i] = reinterpret_cast<VIDEO_FRAME_INFO_S *>(malloc(sizeof(VIDEO_FRAME_INFO_S)));
+        memset(stChnFrameInfos[i], 0, sizeof(VIDEO_FRAME_INFO_S));
     }
 
-    for (RK_S32 i = 0; i < pstAvsCtx->u32AvsPipeCnt; i++) {
-        RK_MPI_MMZ_Alloc(&(srcBlk[i]), stSrcMbPicCalResult.u32MBSize, RK_MMZ_ALLOC_CACHEABLE);
-        snprintf(avsGetReleaseCtx->srcPath, sizeof(avsGetReleaseCtx->srcPath) , "/usr/data/demo_data/hk_data/image_data/camera%d.nv12", i);
-        avsGetReleaseCtx->srcFp[i] = fopen(avsGetReleaseCtx->srcPath, "r");
-        if (RK_NULL == avsGetReleaseCtx->srcFp[i]) {
-            RK_LOGE("pipe %d src file can not find file", i);
-            return RK_ERR_NULL_PTR;
+    s32Ret = TEST_AVS_ComCreateFrame(ctx, stPipeFrameInfos);
+    if (s32Ret != RK_SUCCESS) {
+        goto __FAILED;
+    }
+
+    for (RK_S32 loopNum = 0; loopNum < ctx->s32LoopCount; loopNum++) {
+        s32Ret = TEST_AVS_ComSendFrame(ctx, stPipeFrameInfos);
+        if (s32Ret != RK_SUCCESS) {
+            goto __FAILED;
         }
-    }
-    snprintf(avsGetReleaseCtx->dstPath, sizeof(avsGetReleaseCtx->dstPath), "/usr/data/demo_data/hk_data/test_output/");
-    avsGetReleaseCtx->dstSaveFp = fopen(avsGetReleaseCtx->dstPath, "wb");
-    if (RK_NULL == avsGetReleaseCtx->dstSaveFp) {
-        RK_LOGE("chn %d src file can not find file", 0);
-        return RK_ERR_NULL_PTR;
-    }
 
-    for (RK_S32 loopNum = 0; loopNum < 100; loopNum++) {
-        for (RK_S32 i = 0; i < pstAvsCtx->u32AvsPipeCnt; i++) {
-            if (avsGetReleaseCtx->srcFp[i] != RK_NULL) {
-                s32Ret = fseek(avsGetReleaseCtx->srcFp[i], 0, SEEK_SET);
-                if (s32Ret != 0) {
-                    break;
-                }
-                s32ReadLen = fread(RK_MPI_MB_Handle2VirAddr(srcBlk[i]),
-                                   1, stSrcMbPicCalResult.u32MBSize, avsGetReleaseCtx->srcFp[i]);
-                if (s32ReadLen <= 0) {
-                    RK_LOGE("read size is not enough. read %d, request %d",
-                            s32ReadLen, stSrcMbPicCalResult.u32MBSize);
-                    break;
+        s32Ret = TEST_AVS_ComGetChnFrame(ctx, stChnFrameInfos);
+        if (s32Ret != RK_SUCCESS) {
+            goto __FAILED;
+        }
+
+        for (RK_S32 i = 0; i < ctx->avsContext.u32AvsChnCnt; i++) {
+            if (!stChnFrameInfos[i]->stVFrame.pMbBlk) {
+                continue;
+            }
+            if (ctx->dstFilePath) {
+                snprintf(cWritePath, sizeof(cWritePath), "%schn_out_%dx%d_%d_%d_%s.bin",
+                            ctx->dstFilePath, stChnFrameInfos[i]->stVFrame.u32VirWidth,
+                            stChnFrameInfos[i]->stVFrame.u32VirHeight, ctx->avsContext.s32GrpId, i,
+                            ctx->enCompressMode ? "nv12_afbc": "nv12");
+
+                s32Ret = TEST_COMM_FileWriteOneFrame(cWritePath, stChnFrameInfos[i]);
+                if (s32Ret != RK_SUCCESS) {
+                    goto __FAILED;
                 }
             }
-            frameIn[i].stVFrame.pMbBlk = srcBlk[i];
-            frameIn[i].stVFrame.u32Width = 2688;
-            frameIn[i].stVFrame.u32Height = 1520;
-            frameIn[i].stVFrame.u32VirWidth = stSrcMbPicCalResult.u32VirWidth;
-            frameIn[i].stVFrame.u32VirHeight = stSrcMbPicCalResult.u32VirHeight;
-            frameIn[i].stVFrame.enCompressMode = COMPRESS_MODE_NONE;
-            frameIn[i].stVFrame.enPixelFormat = RK_FMT_YUV420SP;
-
-            s32Ret = RK_MPI_AVS_SendPipeFrame(pstAvsCtx->s32GrpId, i, &(frameIn[i]), -1);
+            s32Ret = RK_MPI_AVS_ReleaseChnFrame(pstAvsCtx->s32GrpId, i, stChnFrameInfos[i]);
             if (s32Ret != RK_SUCCESS) {
-                RK_MPI_MB_ReleaseMB(srcBlk[i]);
-                RK_LOGE("send failed grp[%d] pipe[%d] frame %p length %d",
+                RK_LOGE("release failed grp[%d] chn[%d] frame %p",
                         pstAvsCtx->s32GrpId, i,
-                        frameOut.stVFrame.pMbBlk, stSrcMbPicCalResult.u32MBSize);
-                break;
+                        stChnFrameInfos[i]->stVFrame.pMbBlk);
+                    goto __FAILED;
             }
-            RK_LOGE("send successful grp[%d] pipe[%d] frame %p length %d",
-                    pstAvsCtx->s32GrpId, i,
-                    frameOut.stVFrame.pMbBlk, stSrcMbPicCalResult.u32MBSize);
-            s32FrameInputCount++;
-        }
-        for (RK_S32 i = 0; i < pstAvsCtx->u32AvsChnCnt; i++) {
-            s32Ret = RK_MPI_AVS_GetChnFrame(pstAvsCtx->s32GrpId, i, &frameOut, -1);
-            if (s32Ret != RK_SUCCESS) {
-                RK_LOGE("get failed grp[%d] chn[%d] frame %p length %d",
-                        pstAvsCtx->s32GrpId, i,
-                        frameOut.stVFrame.pMbBlk, stDstMbPicCalResult.u32MBSize);
-                break;
-            }
-            s32FrameOutputCount++;
-            RK_LOGE("get successful grp[%d] chn[%d] frame %p length %d",
-                    pstAvsCtx->s32GrpId, i,
-                    frameOut.stVFrame.pMbBlk, stDstMbPicCalResult.u32MBSize);
-            if (avsGetReleaseCtx->dstSaveFp != RK_NULL) {
-                s32Ret = fseek(avsGetReleaseCtx->dstSaveFp, 0, SEEK_END);
-                fwrite(RK_MPI_MB_Handle2VirAddr(frameOut.stVFrame.pMbBlk),
-                        1, stDstMbPicCalResult.u32MBSize, avsGetReleaseCtx->dstSaveFp);
-                fflush(avsGetReleaseCtx->dstSaveFp);
-            }
-            s32Ret = RK_MPI_AVS_ReleaseChnFrame(pstAvsCtx->s32GrpId, i, &frameOut);
-            if (s32Ret != RK_SUCCESS) {
-                RK_LOGE("release failed grp[%d] chn[%d] frame %p length %d",
-                        pstAvsCtx->s32GrpId, i,
-                        frameOut.stVFrame.pMbBlk, stDstMbPicCalResult.u32MBSize);
-                break;
-            }
-            RK_LOGE("release successful grp[%d] chn[%d] frame %p length %d",
-                    pstAvsCtx->s32GrpId, i,
-                    frameOut.stVFrame.pMbBlk, stDstMbPicCalResult.u32MBSize);
         }
     }
-    for (RK_S32 i = 0; i < pstAvsCtx->u32AvsPipeCnt; i++) {
-        fclose(avsGetReleaseCtx->srcFp[i]);
+
+__FAILED:
+    for (RK_S32 i = 0; i < ctx->avsContext.u32AvsPipeCnt; i++) {
+        RK_MPI_MB_ReleaseMB(stPipeFrameInfos[i]->stVFrame.pMbBlk);
     }
 
-    fclose(avsGetReleaseCtx->dstSaveFp);
+    for (RK_S32 i = 0; i < AVS_PIPE_NUM; i++) {
+        RK_SAFE_FREE(stPipeFrameInfos[i]);
+    }
+
+    for (RK_S32 i = 0; i < AVS_MAX_CHN_NUM; i++)
+        RK_SAFE_FREE(stChnFrameInfos[i]);
+
+    RK_SAFE_FREE(stPipeFrameInfos);
+    RK_SAFE_FREE(stChnFrameInfos);
 
     /* avs destroy */
     s32Ret = destroy_avs(pstAvsCtx);
     if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("destroy avs [%d, %d, %d] error %x: ",
-                pstAvsCtx->s32GrpId,
-                pstAvsCtx->s32PipeId,
-                pstAvsCtx->s32ChnId,
-                s32Ret);
         return s32Ret;
     }
 
-__FAILED:
-    RK_SAFE_FREE(pstAvsCtx);
-    RK_SAFE_FREE(avsGetReleaseCtx);
+#if ENABLE_COM_POOL
+    s32Ret = RK_MPI_MB_Exit();
+    if (s32Ret != RK_SUCCESS) {
+        return s32Ret;
+    }
+#endif
 
     return s32Ret;
 }
 
-static RK_S32 test_vi_vpss_vo_loop(RK_VOID) {
+static RK_S32 TEST_AVS_6_Rectilinear(TEST_AVS_CTX_S *ctx) {
     RK_S32 s32Ret = RK_FAILURE;
-    VI_CFG_S   *pstViCtx[AVS_STITCH_NUM];
-    VPSS_CFG_S *pstVpssCtx[AVS_STITCH_NUM];
-    VO_CFG_S   *pstVoCtx[AVS_STITCH_NUM];
-    MPP_CHN_S stViChn[AVS_STITCH_NUM],
-              stVpssChn[AVS_STITCH_NUM],
-              stVoChn[AVS_STITCH_NUM];
+    AVS_CFG_S *pstAvsCtx = reinterpret_cast<AVS_CFG_S *>(&(ctx->avsContext));
+    const RK_CHAR *cTestDataPath = "/data/avs/6x_rectlinear/";
+    RK_CHAR  cWritePath[128] = {0};
+    VIDEO_FRAME_INFO_S **stPipeFrameInfos;
+    VIDEO_FRAME_INFO_S **stChnFrameInfos;
 
-    RK_S32 loopCount = 0;
-    RK_S32 i = 0;
-
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        pstViCtx[i] = reinterpret_cast<VI_CFG_S *>(malloc(sizeof(VI_CFG_S)));
-        pstVpssCtx[i] = reinterpret_cast<VPSS_CFG_S *>(malloc(sizeof(VPSS_CFG_S)));
-        pstVoCtx[i] = reinterpret_cast<VO_CFG_S *>(malloc(sizeof(VO_CFG_S)));
-        memset(pstViCtx[i], 0, sizeof(VI_CFG_S));
-        memset(pstVpssCtx[i], 0, sizeof(VPSS_CFG_S));
-        memset(pstVoCtx[i], 0, sizeof(VO_CFG_S));
-    }
-
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-    /* vi config init */
-        pstViCtx[i]->s32DevId = i;
-        pstViCtx[i]->s32PipeId = pstViCtx[i]->s32DevId;
-        pstViCtx[i]->s32ChnId = 1;
-        pstViCtx[i]->stViChnAttr.stSize.u32Width = 2688;
-        pstViCtx[i]->stViChnAttr.stSize.u32Height = 1520;
-        pstViCtx[i]->stViChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-#if RK_AVS_RK356x
-        if (i == 0) {
-            pstViCtx[i]->stViChnAttr.stIspOpt.u32BufCount = 10;
-            memcpy(pstViCtx[i]->stViChnAttr.stIspOpt.aEntityName, "/dev/video5", strlen("/dev/video5"));    // 15FPS
-        } else if (i == 1) {
-            pstViCtx[i]->stViChnAttr.stIspOpt.u32BufCount = 15;
-            memcpy(pstViCtx[i]->stViChnAttr.stIspOpt.aEntityName, "/dev/video14", strlen("/dev/video14"));  // 30FPS
-        }
-#endif
-#if RK_AVS_RK3588
-        if (i == 0) {
-            pstViCtx[i]->stViChnAttr.stIspOpt.u32BufCount = 10;
-            memcpy(pstViCtx[i]->stViChnAttr.stIspOpt.aEntityName, "/dev/video32", strlen("/dev/video32"));
-        } else if (i == 1) {
-            pstViCtx[i]->stViChnAttr.stIspOpt.u32BufCount = 10;
-            memcpy(pstViCtx[i]->stViChnAttr.stIspOpt.aEntityName, "/dev/video33", strlen("/dev/video33"));
-        } else if (i == 2) {
-            pstViCtx[i]->stViChnAttr.stIspOpt.u32BufCount = 10;
-            memcpy(pstViCtx[i]->stViChnAttr.stIspOpt.aEntityName, "/dev/video40", strlen("/dev/video40"));
-        } else if (i == 3) {
-            pstViCtx[i]->stViChnAttr.stIspOpt.u32BufCount = 10;
-            memcpy(pstViCtx[i]->stViChnAttr.stIspOpt.aEntityName, "/dev/video41", strlen("/dev/video41"));
-        }
-#endif
-        pstViCtx[i]->stViChnAttr.u32Depth = 2;
-        pstViCtx[i]->stViChnAttr.enPixelFormat = RK_FMT_YUV420SP;
-        pstViCtx[i]->stViChnAttr.stFrameRate.s32SrcFrameRate = -1;
-        pstViCtx[i]->stViChnAttr.stFrameRate.s32DstFrameRate = -1;
-
-    /* vi create */
-        s32Ret = create_vi(pstViCtx[i]);
-        if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("vi [%d, %d] init failed: %x",
-                    pstViCtx[i]->s32DevId, pstViCtx[i]->s32ChnId,
-                    s32Ret);
-            goto __FAILED_VI;
-        }
-    }
-
-    /* vpss config init */
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        pstVpssCtx[i]->s32GrpId = i;
-        pstVpssCtx[i]->s32ChnId = 0;
-        pstVpssCtx[i]->u32VpssChnCnt = 1;
-        pstVpssCtx[i]->stVpssGrpAttr.u32MaxW = 4096;
-        pstVpssCtx[i]->stVpssGrpAttr.u32MaxH = 4096;
-        pstVpssCtx[i]->stVpssGrpAttr.enPixelFormat = RK_FMT_YUV420SP;
-        pstVpssCtx[i]->stVpssGrpAttr.stFrameRate.s32SrcFrameRate = -1;
-        pstVpssCtx[i]->stVpssGrpAttr.stFrameRate.s32DstFrameRate = -1;
-        pstVpssCtx[i]->stVpssGrpAttr.enCompressMode = COMPRESS_MODE_NONE;
-        for (RK_S32 j = 0; j < VPSS_MAX_CHN_NUM; j ++) {
-            pstVpssCtx[i]->stVpssChnAttr[j].enChnMode = VPSS_CHN_MODE_USER;
-            pstVpssCtx[i]->stVpssChnAttr[j].enDynamicRange = DYNAMIC_RANGE_SDR8;
-            pstVpssCtx[i]->stVpssChnAttr[j].enPixelFormat = RK_FMT_YUV420SP;
-            pstVpssCtx[i]->stVpssChnAttr[j].stFrameRate.s32SrcFrameRate = -1;
-            pstVpssCtx[i]->stVpssChnAttr[j].stFrameRate.s32DstFrameRate = -1;
-            pstVpssCtx[i]->stVpssChnAttr[j].u32Width = 2688;
-            pstVpssCtx[i]->stVpssChnAttr[j].u32Height = 1520;
-            pstVpssCtx[i]->stVpssChnAttr[j].enCompressMode = COMPRESS_MODE_NONE;
-        }
-        /* vpss create */
-        s32Ret = create_vpss(pstVpssCtx[i]);
-        if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("vpss [%d, %d] create failed: %x",
-                    pstVpssCtx[i]->s32GrpId,
-                    pstVpssCtx[i]->s32ChnId,
-                    s32Ret);
-            goto __FAILED_VPSS;
-        }
-    }
-
-    /* bind vi to vpss */
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        stViChn[i].enModId    = RK_ID_VI;
-        stViChn[i].s32DevId   = pstViCtx[i]->s32DevId;
-        stViChn[i].s32ChnId   = pstViCtx[i]->s32ChnId;
-
-        stVpssChn[i].enModId = RK_ID_VPSS;
-        stVpssChn[i].s32DevId = pstVpssCtx[i]->s32GrpId;
-        stVpssChn[i].s32ChnId = 0;
-
-        RK_LOGI("vi [%d, %d] -> vpss [%d, %d]",
-                stViChn[i].s32DevId, stViChn[i].s32ChnId,
-                stVpssChn[i].s32DevId, stVpssChn[i].s32ChnId);
-        s32Ret = RK_MPI_SYS_Bind(&stViChn[i], &stVpssChn[i]);
-        if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("bind error %x: vi [%d, %d] -> vpss [%d, %d]",
-                    s32Ret,
-                    stViChn[i].s32DevId, stViChn[i].s32ChnId,
-                    stVpssChn[i].s32DevId, stVpssChn[i].s32ChnId);
-            goto __FAILED_VPSS;
-        }
-    }
-
-    /* vo config init */
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        pstVoCtx[i]->s32LayerId = RK356X_VOP_LAYER_CLUSTER_0;
-#if RK_AVS_RK356x
-        pstVoCtx[i]->s32DevId = RK356X_VO_DEV_HD0;
-        pstVoCtx[i]->stVoLayerAttr.enPixFormat = RK_FMT_YUV420SP;
-        pstVoCtx[i]->stVoLayerAttr.stDispRect.u32Width = 1920;
-        pstVoCtx[i]->stVoLayerAttr.stDispRect.u32Height = 1080;
-#endif
-#if RK_AVS_RK3588
-        pstVoCtx[i]->s32DevId = RK3588_VO_DEV_MIPI;     // RK3588_VO_DEV_HDMI;
-        pstVoCtx[i]->stVoLayerAttr.enPixFormat = RK_FMT_RGB888;
-        pstVoCtx[i]->stVoLayerAttr.bDoubleFrame = RK_TRUE;
-        pstVoCtx[i]->stVoLayerAttr.stDispRect.u32Width = 1080;
-        pstVoCtx[i]->stVoLayerAttr.stDispRect.u32Height = 1920;
-#endif
-        pstVoCtx[i]->s32ChnId = i;
-
-        pstVoCtx[i]->stVoCscAttr.enCscMatrix = VO_CSC_MATRIX_IDENTITY;
-        pstVoCtx[i]->stVoCscAttr.u32Contrast = 50;
-        pstVoCtx[i]->stVoCscAttr.u32Hue = 50;
-        pstVoCtx[i]->stVoCscAttr.u32Luma = 50;
-        pstVoCtx[i]->stVoCscAttr.u32Satuature = 50;
-
-        pstVoCtx[i]->stVoLayerAttr.stDispRect.s32X = 0;
-        pstVoCtx[i]->stVoLayerAttr.stDispRect.s32Y = 0;
-        pstVoCtx[i]->stVoLayerAttr.stImageSize.u32Width = pstVoCtx[i]->stVoLayerAttr.stDispRect.u32Width;
-        pstVoCtx[i]->stVoLayerAttr.stImageSize.u32Height = pstVoCtx[i]->stVoLayerAttr.stDispRect.u32Height;
-        if (i == 0) {
-            pstVoCtx[i]->stVoLayerAttr.u32DispFrmRt = 30;
-            pstVoCtx[i]->stVoChnAttr.stRect.s32X = 0;
-            pstVoCtx[i]->stVoChnAttr.stRect.s32Y = 0;
-        } else if (i == 1) {
-            pstVoCtx[i]->stVoLayerAttr.u32DispFrmRt = 30;
-            pstVoCtx[i]->stVoChnAttr.stRect.s32X =
-                pstVoCtx[i]->stVoLayerAttr.stImageSize.u32Width / 2;
-            pstVoCtx[i]->stVoChnAttr.stRect.s32Y = 0;
-        } else if (i == 2) {
-            pstVoCtx[i]->stVoLayerAttr.u32DispFrmRt = 30;
-            pstVoCtx[i]->stVoChnAttr.stRect.s32X = 0;
-            pstVoCtx[i]->stVoChnAttr.stRect.s32Y =
-                pstVoCtx[i]->stVoLayerAttr.stImageSize.u32Height / 2;
-        } else if (i == 3) {
-            pstVoCtx[i]->stVoLayerAttr.u32DispFrmRt = 30;
-            pstVoCtx[i]->stVoChnAttr.stRect.s32X =
-                pstVoCtx[i]->stVoLayerAttr.stImageSize.u32Width / 2;
-            pstVoCtx[i]->stVoChnAttr.stRect.s32Y =
-                pstVoCtx[i]->stVoLayerAttr.stImageSize.u32Height / 2;
-        }
-        pstVoCtx[i]->stVoChnAttr.stRect.u32Width =
-                pstVoCtx[i]->stVoLayerAttr.stImageSize.u32Width / 2;
-            pstVoCtx[i]->stVoChnAttr.stRect.u32Height =
-                pstVoCtx[i]->stVoLayerAttr.stImageSize.u32Height / 2;
-        pstVoCtx[i]->stVoChnAttr.bDeflicker = RK_FALSE;
-        pstVoCtx[i]->stVoChnAttr.u32Priority = 1;
-        pstVoCtx[i]->stVoChnAttr.u32FgAlpha = 128;
-        pstVoCtx[i]->stVoChnAttr.u32BgAlpha = 0;
-
-        /* vo creat */
-        s32Ret = create_vo(pstVoCtx[i]);
-        if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("vo [%d, %d, %d] create failed: %x",
-                    pstVoCtx[i]->s32DevId,
-                    pstVoCtx[i]->s32LayerId,
-                    pstVoCtx[i]->s32ChnId,
-                    s32Ret);
-            goto __FAILED_VO;
-        }
-    }
-
-    /* bind vpss -> vo */
-    for (RK_S32 i = 0; i < AVS_STITCH_NUM; i++) {
-        stVpssChn[i].enModId  = RK_ID_VPSS;
-        stVpssChn[i].s32DevId = pstVpssCtx[i]->s32GrpId;
-        stVpssChn[i].s32ChnId = pstVpssCtx[i]->s32ChnId;
-
-        stVoChn[i].enModId   = RK_ID_VO;
-        stVoChn[i].s32DevId  = 0;
-        stVoChn[i].s32ChnId  = pstVoCtx[i]->s32ChnId;
-
-        RK_LOGD("vpss [%d, %d] -> vo [%d, %d]",
-                stVpssChn[i].s32DevId , stVpssChn[i].s32ChnId,
-                stVoChn[i].s32DevId , stVoChn[i].s32ChnId);
-        s32Ret = RK_MPI_SYS_Bind(&stVpssChn[i], &stVoChn[i]);
-        if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("bind error %x: vpss [%d, %d] -> vo [%d, %d]",
-                    s32Ret,
-                    stVpssChn[i].s32DevId , stVpssChn[i].s32ChnId,
-                    stVoChn[i].s32DevId , stVoChn[i].s32ChnId);
-            goto __FAILED_VO;
-        }
-    }
-    /* do somethings */
-    while (loopCount < 100000) {
-        usleep(30*1000);
-        loopCount++;
-    }
-
-    /* unbind vpss -> vo */
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        s32Ret = RK_MPI_SYS_UnBind(&stVpssChn[i], &stVoChn[i]);
-        if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("unbind error %x: vpss [%d, %d] -> avs [%d, %d]",
-                    s32Ret,
-                    stVpssChn[i].s32DevId, stVpssChn[i].s32ChnId,
-                    stVoChn[i].s32DevId, stVoChn[i].s32ChnId);
-            goto __FAILED;
-        }
-    }
-
-    /* unbind vi -> vpss */
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        s32Ret = RK_MPI_SYS_UnBind(&stViChn[i], &stVpssChn[i]);
-        if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("unbind error %x: vi [%d, %d] -> vpss [%d, %d]",
-                    s32Ret,
-                    stViChn[i].s32DevId, stViChn[i].s32ChnId,
-                    stVpssChn[i].s32DevId, stVpssChn[i].s32ChnId);
-            goto __FAILED;
-        }
-    }
-
-__FAILED_VO:
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        /* destroy vo */
-        s32Ret = destroy_vo(pstVoCtx[i]);
-        if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("vo [%d, %d, %d] create failed: %x",
-                    pstVoCtx[i]->s32DevId,
-                    pstVoCtx[i]->s32ChnId,
-                    pstVoCtx[i]->s32LayerId,
-                    s32Ret);
-            goto __FAILED;
-        }
-    }
-
-__FAILED_VPSS:
-    /* destroy vpss*/
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        s32Ret = destroy_vpss(pstVpssCtx[i]);
-        if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("destroy vpss [%d, %d] error %x ", s32Ret);
-            goto __FAILED;
-        }
-    }
-
-__FAILED_VI:
-    /* destroy vi*/
-    for (RK_S32 i = 0; i < AVS_STITCH_NUM; i++) {
-        s32Ret = destroy_vi(pstViCtx[i]);
-        if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("destroy vi [%d, %d] error %x",
-                    pstViCtx[i]->s32DevId, pstViCtx[i]->s32ChnId,
-                    s32Ret);
-            goto __FAILED;
-        }
-    }
-
-__FAILED:
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        rk_safe_free(pstViCtx[i]);
-        rk_safe_free(pstVpssCtx[i]);
-        rk_safe_free(pstVoCtx[i]);
-    }
-
-    return s32Ret;
-}
-
-static RK_S32 test_vi_avs_vo_loop(RK_VOID) {
-    RK_S32 s32Ret = RK_FAILURE;
-    VI_CFG_S  *pstViCtx[AVS_STITCH_NUM];
-    AVS_CFG_S *pstAvsCtx;
-    VO_CFG_S  *pstVoCtx;
-    MPP_CHN_S stViChn[AVS_STITCH_NUM],
-              stAvsChn[AVS_STITCH_NUM],
-              stVoChn;
-    RK_S32 loopCount = 0;
-    RK_S32 i = 0;
-
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        pstViCtx[i] = reinterpret_cast<VI_CFG_S *>(malloc(sizeof(VI_CFG_S)));
-        memset(pstViCtx[i], 0, sizeof(VI_CFG_S));
-    }
-
-    pstAvsCtx = reinterpret_cast<AVS_CFG_S *>(malloc(sizeof(AVS_CFG_S)));
-    pstVoCtx  = reinterpret_cast<VO_CFG_S *>(malloc(sizeof(VO_CFG_S)));
-    memset(pstAvsCtx, 0, sizeof(AVS_CFG_S));
-    memset(pstVoCtx, 0, sizeof(VO_CFG_S));
-
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-    /* vi config init */
-        pstViCtx[i]->s32DevId = i;
-        pstViCtx[i]->s32PipeId = pstViCtx[i]->s32DevId;
-        pstViCtx[i]->s32ChnId = 0;      // main path
-        if (AVS_STITCH_NUM == 2) {
-            pstViCtx[i]->stViChnAttr.stSize.u32Width = 2688;
-            pstViCtx[i]->stViChnAttr.stSize.u32Height = 1520;
-        } else if (AVS_STITCH_NUM == 4 || AVS_STITCH_NUM == 6) {
-            pstViCtx[i]->stViChnAttr.stSize.u32Width = 2560;
-            pstViCtx[i]->stViChnAttr.stSize.u32Height = 1520;
-        }
-        pstViCtx[i]->stViChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-#if RK_AVS_RK356x
-        if (i == 0) {
-            pstViCtx[i]->stViChnAttr.stIspOpt.u32BufCount = 10;
-            memcpy(pstViCtx[i]->stViChnAttr.stIspOpt.aEntityName, "/dev/video5", strlen("/dev/video5"));  // 15FPS
-        } else if (i == 1) {
-            pstViCtx[i]->stViChnAttr.stIspOpt.u32BufCount = 15;
-            memcpy(pstViCtx[i]->stViChnAttr.stIspOpt.aEntityName, "/dev/video14", strlen("/dev/video14"));  // 30FPS
-        }
-#endif
-#if RK_AVS_RK3588
-        pstViCtx[i]->stViChnAttr.stIspOpt.u32BufCount = 10;
-#endif
-        pstViCtx[i]->stViChnAttr.u32Depth = 2;
-        pstViCtx[i]->stViChnAttr.enPixelFormat = RK_FMT_YUV420SP;
-        pstViCtx[i]->stViChnAttr.enCompressMode = COMPRESS_MODE_NONE;
-        pstViCtx[i]->stViChnAttr.stFrameRate.s32SrcFrameRate = -1;
-        pstViCtx[i]->stViChnAttr.stFrameRate.s32DstFrameRate = -1;
-
-    /* vi create */
-        s32Ret = create_vi(pstViCtx[i]);
-        if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("vi [%d, %d] init failed: %x",
-                    pstViCtx[i]->s32DevId, pstViCtx[i]->s32ChnId,
-                    s32Ret);
-            goto __FAILED_VI;
-        }
-    }
+    snprintf(ctx->srcFilePath, sizeof(ctx->srcFilePath),
+             "%s%s", cTestDataPath, "input_image/");
+    snprintf(ctx->dstFilePath, sizeof(ctx->dstFilePath),
+             "%s%s", cTestDataPath, "output_res/");
 
     /* avs config init */
-    pstAvsCtx->s32GrpId = 0;
-    pstAvsCtx->s32PipeId = 0;
-    pstAvsCtx->s32ChnId = 0;
-    pstAvsCtx->u32AvsPipeCnt = AVS_STITCH_NUM;
-    pstAvsCtx->u32AvsChnCnt = 1;
+    pstAvsCtx->s32GrpId      = 0;
+    pstAvsCtx->s32ChnId      = 0;
+    pstAvsCtx->u32AvsPipeCnt = 6;
+    pstAvsCtx->u32AvsChnCnt  = 1;
+    pstAvsCtx->u32InW        = 2560;
+    pstAvsCtx->u32InH        = 1520;
+    pstAvsCtx->u32OutW       = 8192;
+    pstAvsCtx->u32OutH       = 2700;
 
-    pstAvsCtx->stAvsGrpAttr.enMode = AVS_MODE_BLEND;
-    if (AVS_STITCH_NUM == 2) {
-        pstAvsCtx->u32OutW = 5088;
-        pstAvsCtx->u32OutH = 1520;
-        snprintf(pstAvsCtx->stAvsGrpAttr.stLUT.aFilePath,
-            sizeof("/usr/data/demo_data/2x/multiBand_5088x1520/"),
-            "/usr/data/demo_data/2x/multiBand_5088x1520/");
-    } else if (AVS_STITCH_NUM == 4) {
-        pstAvsCtx->u32OutW = 5440;
-        pstAvsCtx->u32OutH = 2700;
-        snprintf(pstAvsCtx->stAvsGrpAttr.stLUT.aFilePath,
-            sizeof("/usr/data/demo_data/4x/multiBand_5440x2700/"),
-            "/usr/data/demo_data/4x/multiBand_5440x2700/");
-    } else if (AVS_STITCH_NUM == 6) {
-        // pstAvsCtx->u32OutW = 9120;
-        // pstAvsCtx->u32OutH = 2560;
-        // snprintf(pstAvsCtx->stAvsGrpAttr.stLUT.aFilePath,
-        //     sizeof("/usr/data/demo_data/6x/no_fuse_9120x2560/"),
-        //     "/usr/data/demo_data/6x/no_fuse_9120x2560/");
-        // pstAvsCtx->stAvsGrpAttr.enMode = AVS_MODE_NOBLEND_HOR;
-        pstAvsCtx->u32OutW = 8192;
-        pstAvsCtx->u32OutH = 2700;
-        snprintf(pstAvsCtx->stAvsGrpAttr.stLUT.aFilePath,
-                 sizeof("/usr/share/avs_mesh/"),
-                 "/usr/share/avs_mesh/");
-    }
+    snprintf(pstAvsCtx->stAvsGrpAttr.stOutAttr.stCalib.aCalibFilePath,
+             sizeof(pstAvsCtx->stAvsGrpAttr.stOutAttr.stCalib.aCalibFilePath),
+             "%s%s", cTestDataPath, "avs_calib/calib_file.pto");
+    snprintf(pstAvsCtx->stAvsGrpAttr.stOutAttr.stCalib.aMeshAlphaPath,
+            sizeof(pstAvsCtx->stAvsGrpAttr.stOutAttr.stCalib.aCalibFilePath),
+            "%s%s", cTestDataPath, "avs_mesh/");
+
     pstAvsCtx->stAvsGrpAttr.stLUT.enAccuracy                 = AVS_LUT_ACCURACY_HIGH;
-    pstAvsCtx->enOutCmpMode                                  = COMPRESS_MODE_NONE;
-
-    pstAvsCtx->stAvsModParam.u32WorkingSetSize = 67 * 1024;
+    pstAvsCtx->stAvsModParam.u32WorkingSetSize               = 67 * 1024;
+    pstAvsCtx->stAvsModParam.enMBSource                      = MB_SOURCE_PRIVATE;
+    pstAvsCtx->stAvsGrpAttr.enMode                           = AVS_MODE_BLEND;
     pstAvsCtx->stAvsGrpAttr.u32PipeNum                       = pstAvsCtx->u32AvsPipeCnt;
     pstAvsCtx->stAvsGrpAttr.stGainAttr.enMode                = AVS_GAIN_MODE_AUTO;
 
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.enPrjMode              = AVS_PROJECTION_EQUIRECTANGULAR;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stCenter.s32X          = pstAvsCtx->u32OutW / 2;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stCenter.s32Y          = pstAvsCtx->u32OutH / 2;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stFOV.u32FOVX          = 36000;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stFOV.u32FOVY          = 18000;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Roll  = 9000;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Pitch = 9000;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.enPrjMode              = AVS_PROJECTION_RECTILINEAR;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stCenter.s32X          = 4220;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stCenter.s32Y          = 2124;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stFOV.u32FOVX          = 28000;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stFOV.u32FOVY          = 9500;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Roll  = 0;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Pitch = 0;
     pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Yaw   = 0;
     pstAvsCtx->stAvsGrpAttr.stOutAttr.stRotation.s32Roll     = 0;
     pstAvsCtx->stAvsGrpAttr.stOutAttr.stRotation.s32Pitch    = 0;
     pstAvsCtx->stAvsGrpAttr.stOutAttr.stRotation.s32Yaw      = 0;
 
-    pstAvsCtx->stAvsGrpAttr.bSyncPipe                     = RK_TRUE;
+    pstAvsCtx->stAvsGrpAttr.bSyncPipe                     = (RK_BOOL)ctx->s32FrameSync;
     pstAvsCtx->stAvsGrpAttr.stFrameRate.s32SrcFrameRate   = -1;
     pstAvsCtx->stAvsGrpAttr.stFrameRate.s32DstFrameRate   = -1;
 
-    pstAvsCtx->stAvsChnAttr[0].enCompressMode              = pstAvsCtx->enOutCmpMode;
+    pstAvsCtx->stAvsChnAttr[0].enCompressMode              = ctx->enCompressMode;
     pstAvsCtx->stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
     pstAvsCtx->stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
-    pstAvsCtx->stAvsChnAttr[0].u32Depth                    = 0;
+    pstAvsCtx->stAvsChnAttr[0].u32Depth                    = 3;
     pstAvsCtx->stAvsChnAttr[0].u32Width                    = pstAvsCtx->u32OutW;
     pstAvsCtx->stAvsChnAttr[0].u32Height                   = pstAvsCtx->u32OutH;
     pstAvsCtx->stAvsChnAttr[0].enDynamicRange              = DYNAMIC_RANGE_SDR8;
@@ -1235,7 +732,7 @@ static RK_S32 test_vi_avs_vo_loop(RK_VOID) {
     /* avs create */
     s32Ret = create_avs(pstAvsCtx);
     if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("create avs [%d, %d, %d] error %x: ",
+        RK_LOGE("create avs [%d, %d, %d] failed %x",
                 pstAvsCtx->s32GrpId,
                 pstAvsCtx->s32PipeId,
                 pstAvsCtx->s32ChnId,
@@ -1243,222 +740,525 @@ static RK_S32 test_vi_avs_vo_loop(RK_VOID) {
         return s32Ret;
     }
 
-    /* bind vi -> avs */
-    for (RK_S32 i = 0; i < AVS_STITCH_NUM; i++) {
-        stViChn[i].enModId    = RK_ID_VI;
-        stViChn[i].s32DevId   = pstViCtx[i]->s32DevId;
-        stViChn[i].s32ChnId   = pstViCtx[i]->s32ChnId;
+    stPipeFrameInfos = reinterpret_cast<VIDEO_FRAME_INFO_S **>(
+                        malloc(sizeof(VIDEO_FRAME_INFO_S *) * AVS_PIPE_NUM));
+    stChnFrameInfos = reinterpret_cast<VIDEO_FRAME_INFO_S **>(
+                        malloc(sizeof(VIDEO_FRAME_INFO_S *) * AVS_MAX_CHN_NUM));
+    for (RK_S32 i = 0; i < AVS_PIPE_NUM; i++) {
+        stPipeFrameInfos[i] = reinterpret_cast<VIDEO_FRAME_INFO_S *>(malloc(sizeof(VIDEO_FRAME_INFO_S)));
+        memset(stPipeFrameInfos[i], 0, sizeof(VIDEO_FRAME_INFO_S));
+    }
+    for (RK_S32 i = 0; i < AVS_MAX_CHN_NUM; i++) {
+        stChnFrameInfos[i] = reinterpret_cast<VIDEO_FRAME_INFO_S *>(malloc(sizeof(VIDEO_FRAME_INFO_S)));
+        memset(stChnFrameInfos[i], 0, sizeof(VIDEO_FRAME_INFO_S));
+    }
 
-        stAvsChn[i].enModId   = RK_ID_AVS;
-        stAvsChn[i].s32DevId  = pstAvsCtx->s32GrpId;
-        stAvsChn[i].s32ChnId  = i;
+    s32Ret = TEST_AVS_ComCreateFrame(ctx, stPipeFrameInfos);
+    if (s32Ret != RK_SUCCESS) {
+        goto __FAILED;
+    }
 
-        RK_LOGD("vi [%d, %d] -> avs [%d, %d]",
-                stViChn[i].s32DevId , stViChn[i].s32ChnId,
-                stAvsChn[i].s32DevId , stAvsChn[i].s32ChnId);
-        s32Ret = RK_MPI_SYS_Bind(&stViChn[i], &stAvsChn[i]);
+    for (RK_S32 loopNum = 0; loopNum < ctx->s32LoopCount; loopNum++) {
+        s32Ret = TEST_AVS_ComSendFrame(ctx, stPipeFrameInfos);
         if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("bind error %x: vi [%d, %d] -> avs [%d, %d]",
-                    s32Ret,
-                    stViChn[i].s32DevId , stViChn[i].s32ChnId,
-                    stAvsChn[i].s32DevId , stAvsChn[i].s32ChnId);
-            goto __FAILED_AVS;
-        }
-    }
-
-    /* vo config init */
-    pstVoCtx->s32LayerId = RK356X_VOP_LAYER_CLUSTER_0;
-#if RK_AVS_RK356x
-    pstVoCtx->s32DevId = RK356X_VO_DEV_HD0;
-    pstVoCtx->stVoLayerAttr.enPixFormat = RK_FMT_YUV420SP;
-    pstVoCtx->stVoLayerAttr.stDispRect.u32Width = 1920;
-    pstVoCtx->stVoLayerAttr.stDispRect.u32Height = 1080;
-#endif
-#if RK_AVS_RK3588
-    pstVoCtx->s32DevId = RK3588_VO_DEV_HDMI;     // RK3588_VO_DEV_MIPI;
-    pstVoCtx->stVoLayerAttr.enPixFormat = RK_FMT_RGB888;
-    pstVoCtx->stVoLayerAttr.bDoubleFrame = RK_TRUE;
-    pstVoCtx->stVoLayerAttr.stDispRect.u32Width = 1920;
-    pstVoCtx->stVoLayerAttr.stDispRect.u32Height = 1080;
-#endif
-    pstVoCtx->s32ChnId = 0;
-    pstVoCtx->stVoCscAttr.enCscMatrix = VO_CSC_MATRIX_IDENTITY;
-    pstVoCtx->stVoCscAttr.u32Contrast = 50;
-    pstVoCtx->stVoCscAttr.u32Hue = 50;
-    pstVoCtx->stVoCscAttr.u32Luma = 50;
-    pstVoCtx->stVoCscAttr.u32Satuature = 50;
-
-    pstVoCtx->stVoLayerAttr.stDispRect.s32X = 0;
-    pstVoCtx->stVoLayerAttr.stDispRect.s32Y = 0;
-    pstVoCtx->stVoLayerAttr.stImageSize.u32Width =
-        pstVoCtx->stVoLayerAttr.stDispRect.u32Width;
-    pstVoCtx->stVoLayerAttr.stImageSize.u32Height =
-        pstVoCtx->stVoLayerAttr.stDispRect.u32Height;
-
-    pstVoCtx->stVoLayerAttr.u32DispFrmRt = 30;
-    pstVoCtx->stVoChnAttr.stRect.s32X = 0;
-    pstVoCtx->stVoChnAttr.stRect.s32Y = 0;
-    pstVoCtx->stVoChnAttr.stRect.u32Width =
-        pstVoCtx->stVoLayerAttr.stImageSize.u32Width;
-    pstVoCtx->stVoChnAttr.stRect.u32Height =
-        pstVoCtx->stVoLayerAttr.stImageSize.u32Height;
-    pstVoCtx->stVoChnAttr.bDeflicker = RK_FALSE;
-    pstVoCtx->stVoChnAttr.u32Priority = 1;
-    pstVoCtx->stVoChnAttr.u32FgAlpha = 128;
-    pstVoCtx->stVoChnAttr.u32BgAlpha = 0;
-
-    /* vo creat */
-    s32Ret = create_vo(pstVoCtx);
-    if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("vo [%d, %d, %d] create failed: %x",
-                pstVoCtx->s32DevId,
-                pstVoCtx->s32LayerId,
-                pstVoCtx->s32ChnId,
-                s32Ret);
-        goto __FAILED_VO;
-    }
-
-    /* bind avs -> vo */
-    stAvsChn[0].enModId  = RK_ID_AVS;
-    stAvsChn[0].s32DevId = 0;
-    stAvsChn[0].s32ChnId = 0;
-    stVoChn.enModId   = RK_ID_VO;
-    stVoChn.s32DevId  = 0;
-    stVoChn.s32ChnId  = 0;
-
-    RK_LOGD("avs [%d, %d] -> vo [%d, %d]",
-            stAvsChn[0].s32DevId , stAvsChn[0].s32ChnId,
-            stVoChn.s32DevId , stVoChn.s32ChnId);
-    s32Ret = RK_MPI_SYS_Bind(&stAvsChn[0], &stVoChn);
-    if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("bind error %x: avs [%d, %d] -> vo [%d, %d]",
-                s32Ret,
-                stAvsChn[0].s32DevId, stAvsChn[0].s32ChnId,
-                stVoChn.s32DevId, stVoChn.s32ChnId);
-        goto __FAILED_VO;
-    }
-
-    /* thread: do somethings */
-    while (loopCount < 100000) {
-        usleep(30*1000);
-        loopCount++;
-    }
-
-    /* unbind avs -> vo */
-    s32Ret = RK_MPI_SYS_UnBind(&stAvsChn[0], &stVoChn);
-    if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("unbind error %x: avs [%d, %d] -> vo [%d, %d]",
-                s32Ret,
-                stAvsChn[0].s32DevId, stAvsChn[0].s32ChnId,
-                stVoChn.s32DevId, stVoChn.s32ChnId);
-        goto __FAILED;
-    }
-
-    /* unbind vi -> avs */
-    s32Ret = RK_MPI_SYS_UnBind(&stViChn[0], &stAvsChn[0]);
-    if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("unbind error %x: vi [%d, %d] -> avs [%d, %d]",
-                s32Ret,
-                stViChn[0].s32DevId, stViChn[0].s32ChnId,
-                stAvsChn[0].s32DevId, stAvsChn[0].s32ChnId);
-        goto __FAILED;
-    }
-
-__FAILED_VO:
-    /* destroy vo */
-    s32Ret = destroy_vo(pstVoCtx);
-    if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("vo [%d, %d, %d] destory failed: %x",
-                pstVoCtx->s32DevId,
-                pstVoCtx->s32ChnId,
-                pstVoCtx->s32LayerId,
-                s32Ret);
-        goto __FAILED;
-    }
-
-__FAILED_AVS:
-    /* destroy avs */
-    s32Ret = destroy_avs(pstAvsCtx);
-    if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("destroy avs [%d, %d, %d] error %x: ",
-                pstAvsCtx->s32GrpId, pstAvsCtx->s32PipeId,
-                pstAvsCtx->s32ChnId,
-                s32Ret);
-        goto __FAILED;
-    }
-
-__FAILED_VI:
-    /* destroy vi*/
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        s32Ret = destroy_vi(pstViCtx[i]);
-        if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("destroy vi [%d, %d] error %x",
-                    pstViCtx[i]->s32DevId, pstViCtx[i]->s32ChnId,
-                    s32Ret);
             goto __FAILED;
+        }
+
+        s32Ret = TEST_AVS_ComGetChnFrame(ctx, stChnFrameInfos);
+        if (s32Ret != RK_SUCCESS) {
+            goto __FAILED;
+        }
+
+        for (RK_S32 i = 0; i < ctx->avsContext.u32AvsChnCnt; i++) {
+            if (!stChnFrameInfos[i]->stVFrame.pMbBlk) {
+                continue;
+            }
+            if (ctx->dstFilePath) {
+                snprintf(cWritePath, sizeof(cWritePath), "%schn_out_%dx%d_%d_%d_%s.bin",
+                            ctx->dstFilePath, stChnFrameInfos[i]->stVFrame.u32VirWidth,
+                            stChnFrameInfos[i]->stVFrame.u32VirHeight, ctx->avsContext.s32GrpId, i,
+                            ctx->enCompressMode ? "nv12_afbc": "nv12");
+
+                s32Ret = TEST_COMM_FileWriteOneFrame(cWritePath, stChnFrameInfos[i]);
+                if (s32Ret != RK_SUCCESS) {
+                    goto __FAILED;
+                }
+            }
+            s32Ret = RK_MPI_AVS_ReleaseChnFrame(pstAvsCtx->s32GrpId, i, stChnFrameInfos[i]);
+            if (s32Ret != RK_SUCCESS) {
+                RK_LOGE("release failed grp[%d] chn[%d] frame %p",
+                        pstAvsCtx->s32GrpId, i,
+                        stChnFrameInfos[i]->stVFrame.pMbBlk);
+                    goto __FAILED;
+            }
         }
     }
 
 __FAILED:
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        rk_safe_free(pstViCtx[i]);
+    for (RK_S32 i = 0; i < ctx->avsContext.u32AvsPipeCnt; i++) {
+        RK_MPI_MB_ReleaseMB(stPipeFrameInfos[i]->stVFrame.pMbBlk);
     }
-    rk_safe_free(pstAvsCtx);
-    rk_safe_free(pstVoCtx);
+
+    for (RK_S32 i = 0; i < AVS_PIPE_NUM; i++) {
+        RK_SAFE_FREE(stPipeFrameInfos[i]);
+    }
+
+    for (RK_S32 i = 0; i < AVS_MAX_CHN_NUM; i++)
+        RK_SAFE_FREE(stChnFrameInfos[i]);
+
+    RK_SAFE_FREE(stPipeFrameInfos);
+    RK_SAFE_FREE(stChnFrameInfos);
+
+    /* avs destroy */
+    s32Ret = destroy_avs(pstAvsCtx);
+    if (s32Ret != RK_SUCCESS) {
+        return s32Ret;
+    }
 
     return s32Ret;
 }
 
-static RK_S32 test_afbc_vi_avs_vo_loop(RK_VOID) {
+static RK_S32 TEST_AVS_4_Equirectangular_Trans(TEST_AVS_CTX_S *ctx) {
+    RK_LOGE("Test data is not prepared yet!");
+    return RK_SUCCESS;
+}
+
+static RK_S32 TEST_AVS_2_Cylindrical(TEST_AVS_CTX_S *ctx) {
+    RK_LOGE("Test data is not prepared yet!");
+    return RK_SUCCESS;
+}
+
+static RK_S32 TEST_AVS_4_NoBlend_Qr(TEST_AVS_CTX_S *ctx) {
     RK_S32 s32Ret = RK_FAILURE;
-    VI_CFG_S  *pstViCtx[AVS_STITCH_NUM];
-    AVS_CFG_S *pstAvsCtx;
+    AVS_CFG_S *pstAvsCtx = reinterpret_cast<AVS_CFG_S *>(&(ctx->avsContext));
+    const RK_CHAR *cTestDataPath = "/data/avs/4x_qr/";
+    RK_CHAR    cWritePath[128] = {0};
+    VIDEO_FRAME_INFO_S **stPipeFrameInfos;
+    VIDEO_FRAME_INFO_S **stChnFrameInfos;
+
+    snprintf(ctx->srcFilePath, sizeof(ctx->srcFilePath), "%s%s",
+             cTestDataPath, "input_image/");
+    snprintf(ctx->dstFilePath, sizeof(ctx->dstFilePath), "%s%s",
+             cTestDataPath, "output_res/");
+
+    /* avs config init */
+    pstAvsCtx->s32GrpId      = 0;
+    pstAvsCtx->s32ChnId      = 0;
+    pstAvsCtx->u32AvsPipeCnt = 4;
+    pstAvsCtx->u32AvsChnCnt  = 1;
+    pstAvsCtx->u32InW        = 2560;
+    pstAvsCtx->u32InH        = 1520;
+
+    pstAvsCtx->stAvsModParam.u32WorkingSetSize             = 67 * 1024;
+    pstAvsCtx->stAvsModParam.enMBSource                    = MB_SOURCE_PRIVATE;
+    pstAvsCtx->stAvsGrpAttr.enMode                         = AVS_MODE_NOBLEND_QR;
+    pstAvsCtx->stAvsGrpAttr.u32PipeNum                     = pstAvsCtx->u32AvsPipeCnt;
+    pstAvsCtx->stAvsGrpAttr.bSyncPipe                      = (RK_BOOL)ctx->s32FrameSync;
+    pstAvsCtx->stAvsGrpAttr.stFrameRate.s32SrcFrameRate    = -1;
+    pstAvsCtx->stAvsGrpAttr.stFrameRate.s32DstFrameRate    = -1;
+
+    pstAvsCtx->stAvsChnAttr[0].enCompressMode              = ctx->enCompressMode;
+    pstAvsCtx->stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
+    pstAvsCtx->stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
+    pstAvsCtx->stAvsChnAttr[0].u32Depth                    = 3;
+    pstAvsCtx->stAvsChnAttr[0].u32Width                    = 0;
+    pstAvsCtx->stAvsChnAttr[0].u32Height                   = 0;
+    pstAvsCtx->stAvsChnAttr[0].enDynamicRange              = DYNAMIC_RANGE_SDR8;
+
+    /* avs create */
+    s32Ret = create_avs(pstAvsCtx);
+    if (s32Ret != RK_SUCCESS) {
+        RK_LOGE("create avs [%d, %d, %d] failed %x",
+                pstAvsCtx->s32GrpId,
+                pstAvsCtx->s32PipeId,
+                pstAvsCtx->s32ChnId,
+                s32Ret);
+        return s32Ret;
+    }
+
+    stPipeFrameInfos = reinterpret_cast<VIDEO_FRAME_INFO_S **>(
+                        malloc(sizeof(VIDEO_FRAME_INFO_S *) * AVS_PIPE_NUM));
+    stChnFrameInfos = reinterpret_cast<VIDEO_FRAME_INFO_S **>(
+                        malloc(sizeof(VIDEO_FRAME_INFO_S *) * AVS_MAX_CHN_NUM));
+    for (RK_S32 i = 0; i < AVS_PIPE_NUM; i++) {
+        stPipeFrameInfos[i] = reinterpret_cast<VIDEO_FRAME_INFO_S *>(malloc(sizeof(VIDEO_FRAME_INFO_S)));
+        memset(stPipeFrameInfos[i], 0, sizeof(VIDEO_FRAME_INFO_S));
+    }
+    for (RK_S32 i = 0; i < AVS_MAX_CHN_NUM; i++) {
+        stChnFrameInfos[i] = reinterpret_cast<VIDEO_FRAME_INFO_S *>(malloc(sizeof(VIDEO_FRAME_INFO_S)));
+        memset(stChnFrameInfos[i], 0, sizeof(VIDEO_FRAME_INFO_S));
+    }
+
+    s32Ret = TEST_AVS_ComCreateFrame(ctx, stPipeFrameInfos);
+    if (s32Ret != RK_SUCCESS) {
+        goto __FAILED;
+    }
+
+    for (RK_S32 loopNum = 0; loopNum < ctx->s32LoopCount; loopNum++) {
+        s32Ret = TEST_AVS_ComSendFrame(ctx, stPipeFrameInfos);
+        if (s32Ret != RK_SUCCESS) {
+            goto __FAILED;
+        }
+
+        s32Ret = TEST_AVS_ComGetChnFrame(ctx, stChnFrameInfos);
+        if (s32Ret != RK_SUCCESS) {
+            goto __FAILED;
+        }
+
+        for (RK_S32 i = 0; i < ctx->avsContext.u32AvsChnCnt; i++) {
+            if (!stChnFrameInfos[i]->stVFrame.pMbBlk) {
+                continue;
+            }
+            if (ctx->dstFilePath) {
+                snprintf(cWritePath, sizeof(cWritePath), "%schn_out_%dx%d_%d_%d_%s.bin",
+                            ctx->dstFilePath, stChnFrameInfos[i]->stVFrame.u32VirWidth,
+                            stChnFrameInfos[i]->stVFrame.u32VirHeight, ctx->avsContext.s32GrpId, i,
+                            ctx->enCompressMode ? "nv12_afbc": "nv12");
+
+                s32Ret = TEST_COMM_FileWriteOneFrame(cWritePath, stChnFrameInfos[i]);
+                if (s32Ret != RK_SUCCESS) {
+                    goto __FAILED;
+                }
+            }
+            s32Ret = RK_MPI_AVS_ReleaseChnFrame(pstAvsCtx->s32GrpId, i, stChnFrameInfos[i]);
+            if (s32Ret != RK_SUCCESS) {
+                RK_LOGE("release failed grp[%d] chn[%d] frame %p",
+                        pstAvsCtx->s32GrpId, i,
+                        stChnFrameInfos[i]->stVFrame.pMbBlk);
+                    goto __FAILED;
+            }
+        }
+    }
+
+__FAILED:
+    for (RK_S32 i = 0; i < ctx->avsContext.u32AvsPipeCnt; i++) {
+        RK_MPI_MB_ReleaseMB(stPipeFrameInfos[i]->stVFrame.pMbBlk);
+    }
+
+    for (RK_S32 i = 0; i < AVS_PIPE_NUM; i++) {
+        RK_SAFE_FREE(stPipeFrameInfos[i]);
+    }
+
+    for (RK_S32 i = 0; i < AVS_MAX_CHN_NUM; i++)
+        RK_SAFE_FREE(stChnFrameInfos[i]);
+
+    RK_SAFE_FREE(stPipeFrameInfos);
+    RK_SAFE_FREE(stChnFrameInfos);
+
+    /* avs destroy */
+    s32Ret = destroy_avs(pstAvsCtx);
+    if (s32Ret != RK_SUCCESS) {
+        return s32Ret;
+    }
+
+    return s32Ret;
+}
+
+static RK_S32 TEST_AVS_6_NoBlend_Hor(TEST_AVS_CTX_S *ctx) {
+    RK_S32 s32Ret = RK_FAILURE;
+    AVS_CFG_S *pstAvsCtx = reinterpret_cast<AVS_CFG_S *>(&(ctx->avsContext));
+    const RK_CHAR *cTestDataPath = "/data/avs/6x_hor_ver/";
+    RK_CHAR    cWritePath[128] = {0};
+    VIDEO_FRAME_INFO_S **stPipeFrameInfos;
+    VIDEO_FRAME_INFO_S **stChnFrameInfos;
+
+    snprintf(ctx->srcFilePath, sizeof(ctx->srcFilePath), "%s%s",
+             cTestDataPath, "input_image/");
+    snprintf(ctx->dstFilePath, sizeof(ctx->dstFilePath), "%s%s",
+             cTestDataPath, "output_res/");
+
+    /* avs config init */
+    pstAvsCtx->s32GrpId      = 0;
+    pstAvsCtx->s32ChnId      = 0;
+    pstAvsCtx->u32AvsPipeCnt = 6;
+    pstAvsCtx->u32AvsChnCnt  = 1;
+    pstAvsCtx->u32InW        = 2560;
+    pstAvsCtx->u32InH        = 1520;
+
+    pstAvsCtx->stAvsModParam.u32WorkingSetSize             = 67 * 1024;
+    pstAvsCtx->stAvsModParam.enMBSource                    = MB_SOURCE_PRIVATE;
+    pstAvsCtx->stAvsGrpAttr.enMode                         = AVS_MODE_NOBLEND_HOR;
+    pstAvsCtx->stAvsGrpAttr.u32PipeNum                     = pstAvsCtx->u32AvsPipeCnt;
+    pstAvsCtx->stAvsGrpAttr.bSyncPipe                      = (RK_BOOL)ctx->s32FrameSync;
+    pstAvsCtx->stAvsGrpAttr.stFrameRate.s32SrcFrameRate    = -1;
+    pstAvsCtx->stAvsGrpAttr.stFrameRate.s32DstFrameRate    = -1;
+
+    pstAvsCtx->stAvsChnAttr[0].enCompressMode              = ctx->enCompressMode;
+    pstAvsCtx->stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
+    pstAvsCtx->stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
+    pstAvsCtx->stAvsChnAttr[0].u32Depth                    = 3;
+    pstAvsCtx->stAvsChnAttr[0].u32Width                    = 0;
+    pstAvsCtx->stAvsChnAttr[0].u32Height                   = 0;
+    pstAvsCtx->stAvsChnAttr[0].enDynamicRange              = DYNAMIC_RANGE_SDR8;
+
+    /* avs create */
+    s32Ret = create_avs(pstAvsCtx);
+    if (s32Ret != RK_SUCCESS) {
+        RK_LOGE("create avs [%d, %d, %d] failed %x",
+                pstAvsCtx->s32GrpId,
+                pstAvsCtx->s32PipeId,
+                pstAvsCtx->s32ChnId,
+                s32Ret);
+        return s32Ret;
+    }
+
+    stPipeFrameInfos = reinterpret_cast<VIDEO_FRAME_INFO_S **>(
+                        malloc(sizeof(VIDEO_FRAME_INFO_S *) * AVS_PIPE_NUM));
+    stChnFrameInfos = reinterpret_cast<VIDEO_FRAME_INFO_S **>(
+                        malloc(sizeof(VIDEO_FRAME_INFO_S *) * AVS_MAX_CHN_NUM));
+    for (RK_S32 i = 0; i < AVS_PIPE_NUM; i++) {
+        stPipeFrameInfos[i] = reinterpret_cast<VIDEO_FRAME_INFO_S *>(malloc(sizeof(VIDEO_FRAME_INFO_S)));
+        memset(stPipeFrameInfos[i], 0, sizeof(VIDEO_FRAME_INFO_S));
+    }
+    for (RK_S32 i = 0; i < AVS_MAX_CHN_NUM; i++) {
+        stChnFrameInfos[i] = reinterpret_cast<VIDEO_FRAME_INFO_S *>(malloc(sizeof(VIDEO_FRAME_INFO_S)));
+        memset(stChnFrameInfos[i], 0, sizeof(VIDEO_FRAME_INFO_S));
+    }
+
+    s32Ret = TEST_AVS_ComCreateFrame(ctx, stPipeFrameInfos);
+    if (s32Ret != RK_SUCCESS) {
+        goto __FAILED;
+    }
+
+    for (RK_S32 loopNum = 0; loopNum < ctx->s32LoopCount; loopNum++) {
+        s32Ret = TEST_AVS_ComSendFrame(ctx, stPipeFrameInfos);
+        if (s32Ret != RK_SUCCESS) {
+            goto __FAILED;
+        }
+
+        s32Ret = TEST_AVS_ComGetChnFrame(ctx, stChnFrameInfos);
+        if (s32Ret != RK_SUCCESS) {
+            goto __FAILED;
+        }
+
+        for (RK_S32 i = 0; i < ctx->avsContext.u32AvsChnCnt; i++) {
+            if (!stChnFrameInfos[i]->stVFrame.pMbBlk) {
+                continue;
+            }
+            if (ctx->dstFilePath) {
+                snprintf(cWritePath, sizeof(cWritePath), "%schn_out_%dx%d_%d_%d_%s.bin",
+                            ctx->dstFilePath, stChnFrameInfos[i]->stVFrame.u32VirWidth,
+                            stChnFrameInfos[i]->stVFrame.u32VirHeight, ctx->avsContext.s32GrpId, i,
+                            ctx->enCompressMode ? "nv12_afbc": "nv12");
+
+                s32Ret = TEST_COMM_FileWriteOneFrame(cWritePath, stChnFrameInfos[i]);
+                if (s32Ret != RK_SUCCESS) {
+                    goto __FAILED;
+                }
+            }
+            s32Ret = RK_MPI_AVS_ReleaseChnFrame(pstAvsCtx->s32GrpId, i, stChnFrameInfos[i]);
+            if (s32Ret != RK_SUCCESS) {
+                RK_LOGE("release failed grp[%d] chn[%d] frame %p",
+                        pstAvsCtx->s32GrpId, i,
+                        stChnFrameInfos[i]->stVFrame.pMbBlk);
+                    goto __FAILED;
+            }
+        }
+    }
+
+__FAILED:
+    for (RK_S32 i = 0; i < ctx->avsContext.u32AvsPipeCnt; i++) {
+        RK_MPI_MB_ReleaseMB(stPipeFrameInfos[i]->stVFrame.pMbBlk);
+    }
+
+    for (RK_S32 i = 0; i < AVS_PIPE_NUM; i++) {
+        RK_SAFE_FREE(stPipeFrameInfos[i]);
+    }
+
+    for (RK_S32 i = 0; i < AVS_MAX_CHN_NUM; i++)
+        RK_SAFE_FREE(stChnFrameInfos[i]);
+
+    RK_SAFE_FREE(stPipeFrameInfos);
+    RK_SAFE_FREE(stChnFrameInfos);
+
+    /* avs destroy */
+    s32Ret = destroy_avs(pstAvsCtx);
+    if (s32Ret != RK_SUCCESS) {
+        return s32Ret;
+    }
+
+    return s32Ret;
+}
+
+static RK_S32 TEST_AVS_6_NoBlend_Ver(TEST_AVS_CTX_S *ctx) {
+    RK_S32 s32Ret = RK_FAILURE;
+    AVS_CFG_S *pstAvsCtx = reinterpret_cast<AVS_CFG_S *>(&(ctx->avsContext));
+    const RK_CHAR *cTestDataPath = "/data/avs/6x_hor_ver/";
+    RK_CHAR    cWritePath[MAX_FILE_PATH_LEN] = {0};
+    VIDEO_FRAME_INFO_S **stPipeFrameInfos;
+    VIDEO_FRAME_INFO_S **stChnFrameInfos;
+
+    snprintf(ctx->srcFilePath, sizeof(ctx->srcFilePath), "%s%s",
+             cTestDataPath, "input_image/");
+    snprintf(ctx->dstFilePath, sizeof(ctx->dstFilePath), "%s%s",
+             cTestDataPath, "output_res/");
+
+    /* avs config init */
+    pstAvsCtx->s32GrpId      = 0;
+    pstAvsCtx->s32ChnId      = 0;
+    pstAvsCtx->u32AvsPipeCnt = 6;
+    pstAvsCtx->u32AvsChnCnt  = 1;
+    pstAvsCtx->u32InW        = 2560;
+    pstAvsCtx->u32InH        = 1520;
+
+    pstAvsCtx->stAvsModParam.u32WorkingSetSize             = 67 * 1024;
+    pstAvsCtx->stAvsModParam.enMBSource                    = MB_SOURCE_PRIVATE;
+    pstAvsCtx->stAvsGrpAttr.enMode                         = AVS_MODE_NOBLEND_VER;
+    pstAvsCtx->stAvsGrpAttr.u32PipeNum                     = pstAvsCtx->u32AvsPipeCnt;
+    pstAvsCtx->stAvsGrpAttr.bSyncPipe                      = (RK_BOOL)ctx->s32FrameSync;
+    pstAvsCtx->stAvsGrpAttr.stFrameRate.s32SrcFrameRate    = -1;
+    pstAvsCtx->stAvsGrpAttr.stFrameRate.s32DstFrameRate    = -1;
+
+    pstAvsCtx->stAvsChnAttr[0].enCompressMode              = ctx->enCompressMode;
+    pstAvsCtx->stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
+    pstAvsCtx->stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
+    pstAvsCtx->stAvsChnAttr[0].u32Depth                    = 3;
+    pstAvsCtx->stAvsChnAttr[0].u32Width                    = 0;
+    pstAvsCtx->stAvsChnAttr[0].u32Height                   = 0;
+    pstAvsCtx->stAvsChnAttr[0].enDynamicRange              = DYNAMIC_RANGE_SDR8;
+
+    /* avs create */
+    s32Ret = create_avs(pstAvsCtx);
+    if (s32Ret != RK_SUCCESS) {
+        RK_LOGE("create avs [%d, %d, %d] failed %x",
+                pstAvsCtx->s32GrpId,
+                pstAvsCtx->s32PipeId,
+                pstAvsCtx->s32ChnId,
+                s32Ret);
+        return s32Ret;
+    }
+
+    stPipeFrameInfos = reinterpret_cast<VIDEO_FRAME_INFO_S **>(
+                        malloc(sizeof(VIDEO_FRAME_INFO_S *) * AVS_PIPE_NUM));
+    stChnFrameInfos = reinterpret_cast<VIDEO_FRAME_INFO_S **>(
+                        malloc(sizeof(VIDEO_FRAME_INFO_S *) * AVS_MAX_CHN_NUM));
+    for (RK_S32 i = 0; i < AVS_PIPE_NUM; i++) {
+        stPipeFrameInfos[i] = reinterpret_cast<VIDEO_FRAME_INFO_S *>(malloc(sizeof(VIDEO_FRAME_INFO_S)));
+        memset(stPipeFrameInfos[i], 0, sizeof(VIDEO_FRAME_INFO_S));
+    }
+    for (RK_S32 i = 0; i < AVS_MAX_CHN_NUM; i++) {
+        stChnFrameInfos[i] = reinterpret_cast<VIDEO_FRAME_INFO_S *>(malloc(sizeof(VIDEO_FRAME_INFO_S)));
+        memset(stChnFrameInfos[i], 0, sizeof(VIDEO_FRAME_INFO_S));
+    }
+
+    s32Ret = TEST_AVS_ComCreateFrame(ctx, stPipeFrameInfos);
+    if (s32Ret != RK_SUCCESS) {
+        goto __FAILED;
+    }
+
+    for (RK_S32 loopNum = 0; loopNum < ctx->s32LoopCount; loopNum++) {
+        s32Ret = TEST_AVS_ComSendFrame(ctx, stPipeFrameInfos);
+        if (s32Ret != RK_SUCCESS) {
+            goto __FAILED;
+        }
+
+        s32Ret = TEST_AVS_ComGetChnFrame(ctx, stChnFrameInfos);
+        if (s32Ret != RK_SUCCESS) {
+            goto __FAILED;
+        }
+
+        for (RK_S32 i = 0; i < ctx->avsContext.u32AvsChnCnt; i++) {
+            if (!stChnFrameInfos[i]->stVFrame.pMbBlk) {
+                continue;
+            }
+            if (ctx->dstFilePath) {
+                snprintf(cWritePath, sizeof(cWritePath), "%schn_out_%dx%d_%d_%d_%s.bin",
+                            ctx->dstFilePath, stChnFrameInfos[i]->stVFrame.u32VirWidth,
+                            stChnFrameInfos[i]->stVFrame.u32VirHeight, ctx->avsContext.s32GrpId, i,
+                            ctx->enCompressMode ? "nv12_afbc": "nv12");
+
+                s32Ret = TEST_COMM_FileWriteOneFrame(cWritePath, stChnFrameInfos[i]);
+                if (s32Ret != RK_SUCCESS) {
+                    goto __FAILED;
+                }
+            }
+            s32Ret = RK_MPI_AVS_ReleaseChnFrame(pstAvsCtx->s32GrpId, i, stChnFrameInfos[i]);
+            if (s32Ret != RK_SUCCESS) {
+                RK_LOGE("release failed grp[%d] chn[%d] frame %p",
+                        pstAvsCtx->s32GrpId, i,
+                        stChnFrameInfos[i]->stVFrame.pMbBlk);
+                    goto __FAILED;
+            }
+        }
+    }
+
+__FAILED:
+    for (RK_S32 i = 0; i < ctx->avsContext.u32AvsPipeCnt; i++) {
+        RK_MPI_MB_ReleaseMB(stPipeFrameInfos[i]->stVFrame.pMbBlk);
+    }
+
+    for (RK_S32 i = 0; i < AVS_PIPE_NUM; i++) {
+        RK_SAFE_FREE(stPipeFrameInfos[i]);
+    }
+
+    for (RK_S32 i = 0; i < AVS_MAX_CHN_NUM; i++)
+        RK_SAFE_FREE(stChnFrameInfos[i]);
+
+    RK_SAFE_FREE(stPipeFrameInfos);
+    RK_SAFE_FREE(stChnFrameInfos);
+
+    /* avs destroy */
+    s32Ret = destroy_avs(pstAvsCtx);
+    if (s32Ret != RK_SUCCESS) {
+        return s32Ret;
+    }
+
+    return s32Ret;
+}
+
+static RK_VOID sigterm_handler(int sig) {
+    RK_LOGE("signal %d\n", sig);
+    bExit = RK_TRUE;
+}
+
+static RK_S32 test_vi_avs_vo_loop(TEST_AVS_CTX_S *ctx) {
+    RK_S32 s32Ret = RK_FAILURE;
+    VI_CFG_S  *pstViCtx;
+    AVS_CFG_S *pstAvsCtx = reinterpret_cast<AVS_CFG_S *>(&(ctx->avsContext));
     VO_CFG_S  *pstVoCtx;
-    MPP_CHN_S stViChn[AVS_STITCH_NUM],
-              stAvsChn[AVS_STITCH_NUM],
+    MPP_CHN_S stViChn[AVS_PIPE_NUM],
+              stAvsChn[AVS_PIPE_NUM],
               stVoChn;
     RK_S32 loopCount = 0;
     RK_S32 i = 0;
+    RK_U32 cameraNum = 6;
 
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        pstViCtx[i] = reinterpret_cast<VI_CFG_S *>(malloc(sizeof(VI_CFG_S)));
-        memset(pstViCtx[i], 0, sizeof(VI_CFG_S));
-    }
-
-    pstAvsCtx = reinterpret_cast<AVS_CFG_S *>(malloc(sizeof(AVS_CFG_S)));
+    pstViCtx = reinterpret_cast<VI_CFG_S *>(malloc(sizeof(VI_CFG_S) * AVS_PIPE_NUM));
     pstVoCtx  = reinterpret_cast<VO_CFG_S *>(malloc(sizeof(VO_CFG_S)));
-    memset(pstAvsCtx, 0, sizeof(AVS_CFG_S));
+    memset(pstViCtx, 0, sizeof(VI_CFG_S));
     memset(pstVoCtx, 0, sizeof(VO_CFG_S));
 
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
+    for (i = 0; i < cameraNum; i++) {
     /* vi config init */
-        pstViCtx[i]->s32DevId = i;
-        pstViCtx[i]->s32PipeId = pstViCtx[i]->s32DevId;
-        pstViCtx[i]->s32ChnId = 2;  // fbc path
-        if (AVS_STITCH_NUM == 2) {
-            pstViCtx[i]->stViChnAttr.stSize.u32Width = 2688;
-            pstViCtx[i]->stViChnAttr.stSize.u32Height = 1520;
-        } else if (AVS_STITCH_NUM == 4 || AVS_STITCH_NUM == 6) {
-            pstViCtx[i]->stViChnAttr.stSize.u32Width = 2560;
-            pstViCtx[i]->stViChnAttr.stSize.u32Height = 1520;
+        pstViCtx[i].s32DevId = i;
+        pstViCtx[i].s32PipeId = pstViCtx[i].s32DevId;
+        if (ctx->enCompressMode == COMPRESS_MODE_NONE) {
+            pstViCtx[i].s32ChnId = 0;      // main path
+        } else if (ctx->enCompressMode == COMPRESS_AFBC_16x16) {
+            pstViCtx[i].s32ChnId = 2;      // fbc path
         }
-        pstViCtx[i]->stViChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-#if RK_AVS_RK3588
-        pstViCtx[i]->stViChnAttr.stIspOpt.u32BufCount = 10;
-#endif
-        pstViCtx[i]->stViChnAttr.u32Depth = 2;
-        pstViCtx[i]->stViChnAttr.enPixelFormat = RK_FMT_YUV420SP;
-        pstViCtx[i]->stViChnAttr.enCompressMode = COMPRESS_AFBC_16x16;
-        pstViCtx[i]->stViChnAttr.stFrameRate.s32SrcFrameRate = -1;
-        pstViCtx[i]->stViChnAttr.stFrameRate.s32DstFrameRate = -1;
+        if (cameraNum == 2) {
+            pstViCtx[i].stViChnAttr.stSize.u32Width = 2688;
+            pstViCtx[i].stViChnAttr.stSize.u32Height = 1520;
+        } else if (cameraNum == 4 || cameraNum == 6) {
+            pstViCtx[i].stViChnAttr.stSize.u32Width = 2560;
+            pstViCtx[i].stViChnAttr.stSize.u32Height = 1520;
+        }
+        pstViCtx[i].stViChnAttr.stIspOpt.enMemoryType       = VI_V4L2_MEMORY_TYPE_DMABUF;
+        pstViCtx[i].stViChnAttr.stIspOpt.u32BufCount        = 10;
+        pstViCtx[i].stViChnAttr.u32Depth                    = 2;
+        pstViCtx[i].stViChnAttr.enPixelFormat               = RK_FMT_YUV420SP;
+        pstViCtx[i].stViChnAttr.enCompressMode              = ctx->enCompressMode;
+        pstViCtx[i].stViChnAttr.stFrameRate.s32SrcFrameRate = -1;
+        pstViCtx[i].stViChnAttr.stFrameRate.s32DstFrameRate = -1;
 
     /* vi create */
-        s32Ret = create_vi(pstViCtx[i]);
+        s32Ret = create_vi(&pstViCtx[i]);
         if (s32Ret != RK_SUCCESS) {
             RK_LOGE("vi [%d, %d] init failed: %x",
-                    pstViCtx[i]->s32DevId, pstViCtx[i]->s32ChnId,
+                    pstViCtx[i].s32DevId, pstViCtx[i].s32ChnId,
                     s32Ret);
-            goto __FAILED_VI;
+            goto __FAILED;
         }
     }
 
@@ -1466,47 +1266,47 @@ static RK_S32 test_afbc_vi_avs_vo_loop(RK_VOID) {
     pstAvsCtx->s32GrpId = 0;
     pstAvsCtx->s32PipeId = 0;
     pstAvsCtx->s32ChnId = 0;
-    pstAvsCtx->u32AvsPipeCnt = AVS_STITCH_NUM;
+    pstAvsCtx->u32AvsPipeCnt = cameraNum;
     pstAvsCtx->u32AvsChnCnt = 1;
 
-    pstAvsCtx->stAvsGrpAttr.enMode                       = AVS_MODE_BLEND;
-    if (AVS_STITCH_NUM == 6) {
-        /* pstAvsCtx->u32OutW = 9120;
-        pstAvsCtx->u32OutH = 2560;
-        snprintf(pstAvsCtx->stAvsGrpAttr.stLUT.aFilePath,
-            sizeof("/usr/data/demo_data/6x/no_fuse_9120x2560/"),
-            "/usr/data/demo_data/6x/no_fuse_9120x2560/");
-        pstAvsCtx->stAvsGrpAttr.enMode                       = AVS_MODE_NOBLEND_HOR; */
-        pstAvsCtx->u32OutW = 8192;
-        pstAvsCtx->u32OutH = 2700;
-        snprintf(pstAvsCtx->stAvsGrpAttr.stLUT.aFilePath,
-                 sizeof("/usr/share/avs_mesh/"),
-                 "/usr/share/avs_mesh/");
+    pstAvsCtx->stAvsGrpAttr.enMode = AVS_MODE_BLEND;
+    pstAvsCtx->u32OutW = 8192;
+    pstAvsCtx->u32OutH = 2700;
+
+    if (PARAMS_SOURCES_MESH == ctx->enParamsSources) {
+        snprintf(pstAvsCtx->stAvsGrpAttr.stLUT.aFilePath, sizeof("/usr/share/avs_mesh/"),
+                "/usr/share/avs_mesh/");
+    } else if (PARAMS_SOURCES_CALIB == ctx->enParamsSources) {
+        snprintf(pstAvsCtx->stAvsGrpAttr.stOutAttr.stCalib.aCalibFilePath,
+                 sizeof("/usr/share/avs_calib/calib_file_pos.pto"),
+                 "/usr/share/avs_calib/calib_file_pos.pto");
+        snprintf(pstAvsCtx->stAvsGrpAttr.stOutAttr.stCalib.aMeshAlphaPath, sizeof("/usr/share/avs_calib/"),
+                 "/usr/share/avs_calib/");
     }
+
     pstAvsCtx->stAvsGrpAttr.stLUT.enAccuracy                 = AVS_LUT_ACCURACY_HIGH;
-    pstAvsCtx->enOutCmpMode                                  = COMPRESS_AFBC_16x16;
 
     pstAvsCtx->stAvsModParam.u32WorkingSetSize               = 67 * 1024;
     pstAvsCtx->stAvsGrpAttr.u32PipeNum                       = pstAvsCtx->u32AvsPipeCnt;
     pstAvsCtx->stAvsGrpAttr.stGainAttr.enMode                = AVS_GAIN_MODE_AUTO;
 
     pstAvsCtx->stAvsGrpAttr.stOutAttr.enPrjMode              = AVS_PROJECTION_EQUIRECTANGULAR;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stCenter.s32X          = pstAvsCtx->u32OutW / 2;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stCenter.s32Y          = pstAvsCtx->u32OutH / 2;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stFOV.u32FOVX          = 36000;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stFOV.u32FOVY          = 18000;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Roll  = 9000;
-    pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Pitch = 9000;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stCenter.s32X          = 4196;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stCenter.s32Y          = 2080;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stFOV.u32FOVX          = 28000;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stFOV.u32FOVY          = 9500;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Roll  = 0;
+    pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Pitch = 0;
     pstAvsCtx->stAvsGrpAttr.stOutAttr.stORIRotation.s32Yaw   = 0;
     pstAvsCtx->stAvsGrpAttr.stOutAttr.stRotation.s32Roll     = 0;
     pstAvsCtx->stAvsGrpAttr.stOutAttr.stRotation.s32Pitch    = 0;
     pstAvsCtx->stAvsGrpAttr.stOutAttr.stRotation.s32Yaw      = 0;
 
-    pstAvsCtx->stAvsGrpAttr.bSyncPipe                     = RK_TRUE;
+    pstAvsCtx->stAvsGrpAttr.bSyncPipe                     = (RK_BOOL)ctx->s32FrameSync;
     pstAvsCtx->stAvsGrpAttr.stFrameRate.s32SrcFrameRate   = -1;
     pstAvsCtx->stAvsGrpAttr.stFrameRate.s32DstFrameRate   = -1;
 
-    pstAvsCtx->stAvsChnAttr[0].enCompressMode              = pstAvsCtx->enOutCmpMode;
+    pstAvsCtx->stAvsChnAttr[0].enCompressMode              = ctx->enCompressMode;
     pstAvsCtx->stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
     pstAvsCtx->stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
     pstAvsCtx->stAvsChnAttr[0].u32Depth                    = 0;
@@ -1517,7 +1317,7 @@ static RK_S32 test_afbc_vi_avs_vo_loop(RK_VOID) {
     /* avs create */
     s32Ret = create_avs(pstAvsCtx);
     if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("create avs [%d, %d, %d] error %x: ",
+        RK_LOGE("create avs [%d, %d, %d] error %x",
                 pstAvsCtx->s32GrpId,
                 pstAvsCtx->s32PipeId,
                 pstAvsCtx->s32ChnId,
@@ -1525,44 +1325,19 @@ static RK_S32 test_afbc_vi_avs_vo_loop(RK_VOID) {
         return s32Ret;
     }
 
-    /* bind vi -> avs */
-    for (RK_S32 i = 0; i < AVS_STITCH_NUM; i++) {
-        stViChn[i].enModId    = RK_ID_VI;
-        stViChn[i].s32DevId   = pstViCtx[i]->s32DevId;
-        stViChn[i].s32ChnId   = pstViCtx[i]->s32ChnId;
-
-        stAvsChn[i].enModId   = RK_ID_AVS;
-        stAvsChn[i].s32DevId  = pstAvsCtx->s32GrpId;
-        stAvsChn[i].s32ChnId  = i;
-
-        RK_LOGD("vi [%d, %d] -> avs [%d, %d]",
-                stViChn[i].s32DevId , stViChn[i].s32ChnId,
-                stAvsChn[i].s32DevId , stAvsChn[i].s32ChnId);
-        s32Ret = RK_MPI_SYS_Bind(&stViChn[i], &stAvsChn[i]);
-        if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("bind error %x: vi [%d, %d] -> avs [%d, %d]",
-                    s32Ret,
-                    stViChn[i].s32DevId , stViChn[i].s32ChnId,
-                    stAvsChn[i].s32DevId , stAvsChn[i].s32ChnId);
-            goto __FAILED_AVS;
-        }
-    }
-
     /* vo config init */
-    pstVoCtx->s32LayerId = RK356X_VOP_LAYER_CLUSTER_0;
-#if RK_AVS_RK356x
-    pstVoCtx->s32DevId = RK356X_VO_DEV_HD0;
-    pstVoCtx->stVoLayerAttr.enPixFormat = RK_FMT_YUV420SP;
-    pstVoCtx->stVoLayerAttr.stDispRect.u32Width = 1920;
-    pstVoCtx->stVoLayerAttr.stDispRect.u32Height = 1080;
-#endif
-#if RK_AVS_RK3588
-    pstVoCtx->s32DevId = RK3588_VO_DEV_HDMI;     // RK3588_VO_DEV_MIPI;
+    pstVoCtx->s32LayerId = RK356X_VOP_LAYER_CLUSTER0;
+    pstVoCtx->s32DevId = ctx->enVoDevType;
+    if (RK3588_VO_DEV_HDMI == pstVoCtx->s32DevId) {
+        pstVoCtx->stVoLayerAttr.stDispRect.u32Width = 1920;
+        pstVoCtx->stVoLayerAttr.stDispRect.u32Height = 1080;
+    } else if (RK3588_VO_DEV_MIPI == pstVoCtx->s32DevId) {
+        pstVoCtx->stVoLayerAttr.stDispRect.u32Width = 1080;
+        pstVoCtx->stVoLayerAttr.stDispRect.u32Height = 1920;
+    }
     pstVoCtx->stVoLayerAttr.enPixFormat = RK_FMT_RGB888;
-    pstVoCtx->stVoLayerAttr.bDoubleFrame = RK_TRUE;
-    pstVoCtx->stVoLayerAttr.stDispRect.u32Width = 1920;
-    pstVoCtx->stVoLayerAttr.stDispRect.u32Height = 1080;
-#endif
+    pstVoCtx->stVoLayerAttr.bBypassFrame = RK_FALSE;
+
     pstVoCtx->s32ChnId = 0;
     pstVoCtx->stVoCscAttr.enCscMatrix = VO_CSC_MATRIX_IDENTITY;
     pstVoCtx->stVoCscAttr.u32Contrast = 50;
@@ -1597,7 +1372,30 @@ static RK_S32 test_afbc_vi_avs_vo_loop(RK_VOID) {
                 pstVoCtx->s32LayerId,
                 pstVoCtx->s32ChnId,
                 s32Ret);
-        goto __FAILED_VO;
+        goto __FAILED;
+    }
+
+    /* bind vi -> avs */
+    for (i = 0; i < cameraNum; i++) {
+        stViChn[i].enModId    = RK_ID_VI;
+        stViChn[i].s32DevId   = pstViCtx[i].s32DevId;
+        stViChn[i].s32ChnId   = pstViCtx[i].s32ChnId;
+
+        stAvsChn[i].enModId   = RK_ID_AVS;
+        stAvsChn[i].s32DevId  = pstAvsCtx->s32GrpId;
+        stAvsChn[i].s32ChnId  = i;
+
+        RK_LOGI("vi [%d, %d] -> avs [%d, %d]",
+                stViChn[i].s32DevId , stViChn[i].s32ChnId,
+                stAvsChn[i].s32DevId , stAvsChn[i].s32ChnId);
+        s32Ret = RK_MPI_SYS_Bind(&stViChn[i], &stAvsChn[i]);
+        if (s32Ret != RK_SUCCESS) {
+            RK_LOGE("bind error %x: vi [%d, %d] -> avs [%d, %d]",
+                    s32Ret,
+                    stViChn[i].s32DevId , stViChn[i].s32ChnId,
+                    stAvsChn[i].s32DevId , stAvsChn[i].s32ChnId);
+            goto __FAILED;
+        }
     }
 
     /* bind avs -> vo */
@@ -1608,7 +1406,7 @@ static RK_S32 test_afbc_vi_avs_vo_loop(RK_VOID) {
     stVoChn.s32DevId  = 0;
     stVoChn.s32ChnId  = 0;
 
-    RK_LOGD("avs [%d, %d] -> vo [%d, %d]",
+    RK_LOGI("avs [%d, %d] -> vo [%d, %d]",
             stAvsChn[0].s32DevId , stAvsChn[0].s32ChnId,
             stVoChn.s32DevId , stVoChn.s32ChnId);
     s32Ret = RK_MPI_SYS_Bind(&stAvsChn[0], &stVoChn);
@@ -1617,13 +1415,20 @@ static RK_S32 test_afbc_vi_avs_vo_loop(RK_VOID) {
                 s32Ret,
                 stAvsChn[0].s32DevId, stAvsChn[0].s32ChnId,
                 stVoChn.s32DevId, stVoChn.s32ChnId);
-        goto __FAILED_VO;
+        goto __FAILED;
     }
 
     /* thread: do somethings */
-    while (loopCount < 100000) {
-        usleep(30*1000);
-        loopCount++;
+    signal(SIGINT, sigterm_handler);
+    if (ctx->s32LoopCount < 0) {
+        while (!bExit) {
+            sleep(60);
+        }
+    } else {
+        while (!bExit && loopCount < ctx->s32LoopCount) {
+            sleep(5);
+            loopCount++;
+        }
     }
 
     /* unbind avs -> vo */
@@ -1637,117 +1442,162 @@ static RK_S32 test_afbc_vi_avs_vo_loop(RK_VOID) {
     }
 
     /* unbind vi -> avs */
-    s32Ret = RK_MPI_SYS_UnBind(&stViChn[0], &stAvsChn[0]);
-    if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("unbind error %x: vi [%d, %d] -> avs [%d, %d]",
-                s32Ret,
-                stViChn[0].s32DevId, stViChn[0].s32ChnId,
-                stAvsChn[0].s32DevId, stAvsChn[0].s32ChnId);
-        goto __FAILED;
+    for (RK_S32 i = 0; i < cameraNum; i++) {
+        s32Ret = RK_MPI_SYS_UnBind(&stViChn[i], &stAvsChn[i]);
+        if (s32Ret != RK_SUCCESS) {
+            RK_LOGE("unbind error %x: vi [%d, %d] -> avs [%d, %d]",
+                    s32Ret,
+                    stViChn[i].s32DevId, stViChn[i].s32ChnId,
+                    stAvsChn[i].s32DevId, stAvsChn[i].s32ChnId);
+            goto __FAILED;
+        }
     }
 
-__FAILED_VO:
     /* destroy vo */
     s32Ret = destroy_vo(pstVoCtx);
     if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("vo [%d, %d, %d] destory failed: %x",
-                pstVoCtx->s32DevId,
-                pstVoCtx->s32ChnId,
-                pstVoCtx->s32LayerId,
-                s32Ret);
         goto __FAILED;
     }
 
-
-__FAILED_AVS:
     /* destroy avs */
     s32Ret = destroy_avs(pstAvsCtx);
     if (s32Ret != RK_SUCCESS) {
-        RK_LOGE("destroy avs [%d, %d, %d] error %x: ",
-                pstAvsCtx->s32GrpId, pstAvsCtx->s32PipeId,
-                pstAvsCtx->s32ChnId,
-                s32Ret);
         goto __FAILED;
     }
 
-__FAILED_VI:
     /* destroy vi*/
-    for (RK_S32 i = 0; i < AVS_STITCH_NUM; i++) {
-        s32Ret = destroy_vi(pstViCtx[i]);
+    for (i = 0; i < cameraNum; i++) {
+        s32Ret = destroy_vi(&pstViCtx[i]);
         if (s32Ret != RK_SUCCESS) {
-            RK_LOGE("destroy vi [%d, %d] error %x",
-                    pstViCtx[i]->s32DevId, pstViCtx[i]->s32ChnId,
-                    s32Ret);
             goto __FAILED;
         }
     }
 
 __FAILED:
-    for (i = 0; i < AVS_STITCH_NUM; i++) {
-        rk_safe_free(pstViCtx[i]);
-    }
-    rk_safe_free(pstVoCtx);
-    rk_safe_free(pstAvsCtx);
+    RK_SAFE_FREE(pstViCtx);
+    RK_SAFE_FREE(pstVoCtx);
 
     return s32Ret;
 }
 
 static const char *const usages[] = {
-    "./rk_mpi_avs_test -m 2",
+    "./rk_mpi_avs_test [-m TEST_MODE] [-c LINK_COMPRESS_MODE] [-n LOOP_COUNT] [-s STITCHING_NUM]",
     RK_NULL,
 };
 
-int main(int argc, const char **argv) {
+static void mpi_avs_test_show_options(const TEST_AVS_CTX_S *ctx) {
+    RK_PRINT("cmd parse result:\n");
+    RK_PRINT("test mode           : %d\n", ctx->enTestMode);
+    RK_PRINT("loop count          : %d\n", ctx->s32LoopCount);
+    RK_PRINT("compress mode       : %d\n", ctx->enCompressMode);
+    RK_PRINT("avs frame sync      : %d\n", ctx->s32FrameSync);
+    RK_PRINT("params sources      : %d\n", ctx->enParamsSources);
+    RK_PRINT("vo dev type         : %d\n", ctx->enVoDevType);
+}
+
+RK_S32 main(int argc, const char **argv) {
     RK_S32 s32Ret = RK_FAILURE;
-    RK_S32 s32Mode = 0;
+    TEST_AVS_CTX_S   ctx;
+
+    memset(&ctx, 0, sizeof(TEST_AVS_CTX_S));
+
+    ctx.s32LoopCount       = 100;
+    ctx.enTestMode         = TEST_MODE_AVS_BLEND;
+    ctx.enParamsSources    = PARAMS_SOURCES_MESH;
+    ctx.s32FrameSync       = 0;
+    ctx.enCompressMode     = COMPRESS_AFBC_16x16;
+    ctx.enVoDevType        = RK3588_VO_DEV_MIPI;
 
     RK_LOGE("avs test running enter!");
 
     struct argparse_option options[] = {
         OPT_HELP(),
         OPT_GROUP("basic options:"),
-        OPT_INTEGER('m', "mode", &s32Mode,
-                    "test mode(default 2) \n\t"
-                    "[test]0: avs get&release frame \n\t"
-                    "[test]1: 2 vi -> 2 vpss -> vo. Quad stack \n\t"
-                    "[test]2: 6 vi -> avs -> vo. No AFBC link, Normal projection. \n\t"
-                    "[test]3: 2 vi -> avs -> vo. AFBC link, Normal projection. \n\t"
-                    , NULL, 0, 0),
+        OPT_INTEGER('m', "test_mode", &(ctx.enTestMode),
+                    "test mode(default 0) \n\t"
+                    "0: avs module. 8xEquirectangular, 6xRectilinear. \n\t"
+                    "1: avs module. 6xNoBlend_Hor, 6xNoBlend_Ver, 4xNoBlend_Qr. \n\t"
+                    "2: vi -> avs -> vo. 6xEquirectangular. \n\t", NULL, 0, 0),
+        OPT_INTEGER('n', "loop_count", &(ctx.s32LoopCount),
+                    "loop running count. default(100)", NULL, 0, 0),
+        OPT_INTEGER('c', "link_compress_mode", &(ctx.enCompressMode),
+                    "link compression mode. default(1. 0: Uncompress, 1: AFBC).", NULL, 0, 0),
+        OPT_INTEGER('p', "avs_pipe_sync", &(ctx.s32FrameSync),
+                    "whether enable avs pipe sync. default(0. 0: Disable)", NULL, 0, 0),
+        OPT_INTEGER('\0', "params_sources", &(ctx.enParamsSources),
+                    "params required for stitch are obtained by mesh or calib. (default 0. 0: mesh, 1: calib)",
+                    NULL, 0, 0),
+        OPT_INTEGER('\0', "connector_type", &(ctx.enVoDevType),
+                     "Connctor Type. (default 3. 0: HDMI0, 3: MIPI)", NULL, 0, 0),
         OPT_END(),
     };
     struct argparse argparse;
     argparse_init(&argparse, options, usages, 0);
     argparse_describe(&argparse, "\nselect a test case to run.",
                                  "\nuse --help for details.");
-    argc = argparse_parse(&argparse, argc, argv);
 
-    if (RK_MPI_SYS_Init() != RK_SUCCESS) {
-        goto __FAILED;
+    argc = argparse_parse(&argparse, argc, argv);
+    mpi_avs_test_show_options(&ctx);
+
+    s32Ret = RK_MPI_SYS_Init();
+    if (s32Ret != RK_SUCCESS) {
+        return s32Ret;
     }
-    switch (s32Mode) {
-        case TEST_MODE_AVS_ONLY:
-            RK_LOGE("enter test_vi_get_release_frame_loop");
-            s32Ret = test_avs_get_release_frame_loop();
-        break;
-        case TEST_MODE_VI_VPSS_VO:
-            RK_LOGE("enter test_vi_vpss_vo_loop");
-            s32Ret = test_vi_vpss_vo_loop();
-        break;
-        case TEST_MODE_VI_AVS_VO:
-            RK_LOGE("enter test_vi_avs_vo_loop");
-            s32Ret = test_vi_avs_vo_loop();
-        break;
-        case TEST_MODE_AFBC_VI_AVS_VO:
-            RK_LOGE("enter test_afbc_vi_avs_vo_loop");
-            s32Ret = test_afbc_vi_avs_vo_loop();
-        break;
+
+    switch (ctx.enTestMode) {
+        case TEST_MODE_AVS_BLEND: {
+            s32Ret = TEST_AVS_8_Equirectangular(&ctx);
+            if (s32Ret != RK_SUCCESS) {
+                goto __FAILED;
+            }
+            s32Ret = TEST_AVS_6_Rectilinear(&ctx);
+            if (s32Ret != RK_SUCCESS) {
+                goto __FAILED;
+            }
+            s32Ret = TEST_AVS_4_Equirectangular_Trans(&ctx);
+            if (s32Ret != RK_SUCCESS) {
+                goto __FAILED;
+            }
+            s32Ret = TEST_AVS_2_Cylindrical(&ctx);
+            if (s32Ret != RK_SUCCESS) {
+                goto __FAILED;
+            }
+        } break;
+        case TEST_MODE_AVS_NOBLEND: {
+            s32Ret = TEST_AVS_6_NoBlend_Hor(&ctx);
+            if (s32Ret != RK_SUCCESS) {
+                goto __FAILED;
+            }
+            s32Ret = TEST_AVS_6_NoBlend_Ver(&ctx);
+            if (s32Ret != RK_SUCCESS) {
+                goto __FAILED;
+            }
+            s32Ret = TEST_AVS_4_NoBlend_Qr(&ctx);
+            if (s32Ret != RK_SUCCESS) {
+                goto __FAILED;
+            }
+        } break;
+        case TEST_MODE_VI_AVS_VO: {
+            s32Ret = test_vi_avs_vo_loop(&ctx);
+            if (s32Ret != RK_SUCCESS) {
+                goto __FAILED;
+            }
+        } break;
         default:
-            RK_LOGE("no support such test mode: %d", s32Mode);
+            RK_LOGE("nosupport test mode: %d", ctx.enTestMode);
         break;
     }
+
+    s32Ret = RK_MPI_SYS_Exit();
+    if (s32Ret != RK_SUCCESS) {
+        return s32Ret;
+    }
+    RK_LOGI("test running ok.");
+
+    return RK_SUCCESS;
 __FAILED:
-    RK_LOGE("test running exit: %d", s32Ret);
+    RK_LOGE("test running exit: %x", s32Ret);
     RK_MPI_SYS_Exit();
 
-    return 0;
+    return s32Ret;
 }
