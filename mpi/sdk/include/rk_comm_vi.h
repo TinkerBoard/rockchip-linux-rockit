@@ -1,19 +1,5 @@
-/*
- * Copyright 2020 Rockchip Electronics Co. LTD
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
+/* GPL-2.0 WITH Linux-syscall-note OR Apache 2.0 */
+/* Copyright (c) 2021 Fuzhou Rockchip Electronics Co., Ltd */
 
 #ifndef INCLUDE_RT_MPI_RK_COMM_VI_H_
 #define INCLUDE_RT_MPI_RK_COMM_VI_H_
@@ -32,6 +18,8 @@ extern "C" {
 #define VI_CHN1                       1
 #define VI_CHN2                       2
 #define VI_CHN3                       3
+#define VI_CHN4                       4
+#define VI_CHN5                       5
 
 #define MAX_VI_FILE_PATH_LEN   256
 #define MAX_VI_FILE_NAME_LEN   256
@@ -126,6 +114,12 @@ typedef struct rkVI_DEV_ATTR_S {
     DATA_RATE_E         enDataRate;
 } VI_DEV_ATTR_S;
 
+/* The status of chn */
+typedef struct rkVI_DEV_STATUS_S {
+    SIZE_S  stSize;                     /* RO;chn output size */
+    RK_BOOL bProbeOk;                   /* RO;whether sensor is probed success */
+} VI_DEV_STATUS_S;
+
 /* Information of pipe binded to device */
 typedef struct rkVI_DEV_BIND_PIPE_S {
     RK_U32  u32Num;                                     /* RW;Range [1,VI_MAX_PHY_PIPE_NUM] */
@@ -180,7 +174,7 @@ typedef struct rkVI_ISP_OPT_S {
     VI_V4L2_CAPTURE_TYPE  enCaptureType;      /* RW;isp capture type */
     VI_V4L2_MEMORY_TYPE   enMemoryType;       /* RW;isp buf memory type */
     RK_CHAR               aEntityName[MAX_VI_ENTITY_NAME_LEN];       /* RW;isp capture entity name*/
-    RK_BOOL               bNoUseLibV4L2;      /* RW;is use libv4l2 */
+    RK_BOOL               bNoUseLibV4L2;      /* RW;is no use libv4l2 */
     SIZE_S                stMaxSize;          /* RW;isp bypass resolution */
 } VI_ISP_OPT_S;
 
@@ -217,6 +211,33 @@ typedef struct rkVI_SAVE_FILE_INFO_S {
     RK_CHAR     aFileName[MAX_VI_FILE_NAME_LEN];
     RK_U32      u32FileSize;  /*in KB*/
 } VI_SAVE_FILE_INFO_S;
+
+typedef struct rkVI_CHN_BUF_WRAP_S {
+    RK_BOOL bEnable;
+    RK_U32  u32BufLine;             /* RW; Range: [128, H]; Chn buffer allocated by line. */
+    RK_U32  u32WrapBufferSize;      /* RW; Whether to allocate buffer according to compression. */
+} VI_CHN_BUF_WRAP_S;
+
+/* struct rkisp_mirror_flip
+ * mirror: global for all output stream
+ * flip: independent for all output stream
+ */
+typedef struct rkISP_MIRROR_FLIP_S {
+    RK_U8 mirror;
+    RK_U8 flip;
+} __attribute__((packed)) VI_ISP_MIRROR_FLIP_S;
+
+typedef enum rkVI_CROP_COORDINATE_E {
+    VI_CROP_RATIO_COOR = 0,
+    VI_CROP_ABS_COOR,
+    VI_CROP_BUTT
+} VI_CROP_COORDINATE_E;
+
+typedef struct rkVI_CROP_INFO_S {
+    RK_BOOL bEnable;
+    VI_CROP_COORDINATE_E enCropCoordinate;
+    RECT_S stCropRect;
+} VI_CROP_INFO_S;
 
 /* User picture mode */
 typedef enum rk_VI_USERPIC_MODE_E {
@@ -260,6 +281,30 @@ typedef struct rkVI_EDID_S {
     RK_U32 au32Reserved[5];
     RK_U8 *pu8Edid;
 } VI_EDID_S;
+
+typedef struct rkVI_STREAM_S {
+    MB_BLK  pMbBlk;
+    RK_U32  u32Len;
+    RK_U32  u32Seq;
+    RK_U64  u64PTS;
+} VI_STREAM_S;
+
+typedef enum rkVI_EVENT_E {
+    VI_EVENT_CONNECT_CHANGE = 1 << 0,
+    VI_EVENT_SOURCE_CHANGE = 1 << 1,
+} VI_EVENT_E;
+
+typedef struct rkVI_CB_INFO_S {
+    RK_U32 u32Event;
+} VI_CB_INFO_S;
+
+/** change event handling callback function */
+typedef void (*RK_VI_EventCallback)(RK_VOID *pPrivateData, VI_CB_INFO_S *pstInfo);
+
+typedef struct rkVI_EVENT_CALL_BACK_S {
+    RK_VI_EventCallback pfnCallback;
+    RK_VOID            *pPrivateData;
+} VI_EVENT_CALL_BACK_S;
 
 #define RK_ERR_VI_INVALID_PARA        RK_DEF_ERR(RK_ID_VI, RK_ERR_LEVEL_ERROR, RK_ERR_ILLEGAL_PARAM)
 #define RK_ERR_VI_INVALID_DEVID       RK_DEF_ERR(RK_ID_VI, RK_ERR_LEVEL_ERROR, RK_ERR_INVALID_DEVID)

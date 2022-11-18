@@ -1,19 +1,5 @@
-/*
- * Copyright 2021 Rockchip Electronics Co. LTD
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
+/* GPL-2.0 WITH Linux-syscall-note OR Apache 2.0 */
+/* Copyright (c) 2021 Fuzhou Rockchip Electronics Co., Ltd */
 
 #ifndef INCLUDE_RT_MPI_RK_COMM_RGN_H__
 #define INCLUDE_RT_MPI_RK_COMM_RGN_H__
@@ -32,6 +18,7 @@ typedef RK_U32 RGN_HANDLE;
 
 #define RGN_CLUT_NUM                   256
 #define RGN_MAX_BUF_NUM                2
+#define RGN_COLOR_LUT_NUM              2
 
 #define RGN_MIN_WIDTH                  16
 #define RGN_MIN_HEIGHT                 16
@@ -69,6 +56,7 @@ typedef RK_U32 RGN_HANDLE;
 /* type of video regions */
 typedef enum rkRGN_TYPE_E {
     OVERLAY_RGN = 0,     /* video overlay region */
+    OVERLAY_EX_RGN,
     COVER_RGN,
     MOSAIC_RGN,
     LINE_RGN,
@@ -86,6 +74,19 @@ typedef struct rkOVERLAY_QP_INFO {
     /* absolute / relative qp of macroblock */
     RK_S32 s32Qp;
 } OVERLAY_QP_INFO_S;
+
+typedef enum rkINVERT_COLOR_MODE_E {
+    LESSTHAN_LUM_THRESH = 0,
+    MORETHAN_LUM_THRESH,
+    INVERT_COLOR_BUTT
+} INVERT_COLOR_MODE_E;
+
+typedef struct rkOVERLAY_INVERT_COLOR_S {
+    SIZE_S stInvColArea;
+    RK_U32 u32LumThresh;
+    INVERT_COLOR_MODE_E enChgMod;
+    RK_BOOL bInvColEn;
+} OVERLAY_INVERT_COLOR_S;
 
 typedef struct rkOVERLAY_ATTR_S {
     /* bitmap pixel format,now only support BGRA5551 or ARGB8888 */
@@ -119,6 +120,10 @@ typedef struct rkOVERLAY_CHN_ATTR_S {
 
     /* overlay regions qp info (only support to venc) */
     OVERLAY_QP_INFO_S stQpInfo;
+    /* 2BPP color table*/
+    RK_U32 u32ColorLUT[RGN_COLOR_LUT_NUM];
+
+    OVERLAY_INVERT_COLOR_S stInvertColor;
 } OVERLAY_CHN_ATTR_S;
 
 typedef struct rkRGN_QUADRANGLE_S {

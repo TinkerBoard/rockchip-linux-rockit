@@ -359,7 +359,7 @@ RK_VOID test_mpi_gdc_get_pano_point(TEST_GDC_CTX_S *ctx) {
         stQuery.u32RegionIndex = region;
         stDstPoint.s32X = 0;
         stDstPoint.s32Y = 540;
-        s32Ret = RK_MPI_GDC_FisheyePosQueryDst2Pano(&stQuery, 0, &stDstPoint, &stPanoPoint);
+        s32Ret = RK_MPI_GDC_FisheyePosQueryDst2Pano(&stQuery, &ctx->stTask.stImgIn, 0, &stDstPoint, &stPanoPoint);
         if (s32Ret != RK_SUCCESS) {
             RK_LOGE("RK_MPI_GDC_FisheyePosQueryDst2Pano err:0x%x!", s32Ret);
         }
@@ -443,7 +443,7 @@ RK_S32 test_mpi_gdc_get_pano_point_array(TEST_GDC_CTX_S *ctx, RK_U32 region, RK_
     memset(&stQuery, 0, sizeof(sizeof(FISHEYE_ATTR_S)));
     stQuery.pstFishEyeAttr = &ctx->stFisheyeAttr;
     stQuery.u32RegionIndex = region;
-    s32Ret = RK_MPI_GDC_FisheyePosQueryDst2PanoArray(&stQuery, pano_region, ctx->u32PointLen,
+    s32Ret = RK_MPI_GDC_FisheyePosQueryDst2PanoArray(&stQuery, &ctx->stTask.stImgIn, pano_region, ctx->u32PointLen,
                                                      ctx->pastDstPoint, ctx->pastSrcPoint);
     if (s32Ret != RK_SUCCESS) {
         RK_LOGE("RK_MPI_GDC_FisheyePosQueryDst2PanoArray err:0x%x!", s32Ret);
@@ -457,6 +457,27 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1p_add_1(TEST_GDC_CTX_S *ctx) {
     RK_U32 fishOptParam_originX, fishOptParam_originY;
     fishOptParam_originX = 4132;
     fishOptParam_originY = 4169;
+    RK_U32 outWidthBase = 1920;
+    RK_U32 outHeightBase = 360;
+    RK_U32 outYBase = 720;
+
+    if (ctx->u32SrcWidth == 1920 && ctx->u32SrcHeight == 1080) {
+        outWidthBase = 1920;
+        outHeightBase = 360;
+        outYBase = ctx->u32SrcHeight - outHeightBase;
+    } else if (ctx->u32SrcWidth == 2560 && ctx->u32SrcHeight == 1440) {
+        outWidthBase = 2560;
+        outHeightBase = 480;
+        outYBase = ctx->u32SrcHeight - outHeightBase;
+    } else if (ctx->u32SrcWidth == 3840 && ctx->u32SrcHeight == 2160) {
+        outWidthBase = 3840;
+        outHeightBase = 720;
+        outYBase = ctx->u32SrcHeight - outHeightBase;
+    } else if (ctx->u32SrcWidth == 7680 && ctx->u32SrcHeight == 4320) {
+        outWidthBase = 7680;
+        outHeightBase = 1440;
+        outYBase = ctx->u32SrcHeight - outHeightBase;
+    }
 
     ctx->stFisheyeAttr.bEnable = RK_TRUE;
     ctx->stFisheyeAttr.bLMF = RK_FALSE;
@@ -478,8 +499,8 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1p_add_1(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 0;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 1920;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 550;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outYBase;
     index++;
 
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].enViewMode = FISHEYE_VIEW_360_PANORAMA;
@@ -490,9 +511,9 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1p_add_1(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 720;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 1920;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outYBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     ctx->stFisheyeAttr.u32RegionNum = index;
@@ -503,6 +524,22 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1_add_3(TEST_GDC_CTX_S *ctx) {
     RK_U32 fishOptParam_originX, fishOptParam_originY;
     fishOptParam_originX = 4132;
     fishOptParam_originY = 4169;
+    RK_U32 outWidthBase = 640;
+    RK_U32 outHeightBase = 360;
+
+    if (ctx->u32SrcWidth == 1920 && ctx->u32SrcHeight == 1080) {
+        outWidthBase = 960;
+        outHeightBase = 540;
+    } else if (ctx->u32SrcWidth == 2560 && ctx->u32SrcHeight == 1440) {
+        outWidthBase = 1280;
+        outHeightBase = 720;
+    } else if (ctx->u32SrcWidth == 3840 && ctx->u32SrcHeight == 2160) {
+        outWidthBase = 1920;
+        outHeightBase = 1080;
+    } else if (ctx->u32SrcWidth == 7680 && ctx->u32SrcHeight == 4320) {
+        outWidthBase = 3840;
+        outHeightBase = 2160;
+    }
 
     ctx->stFisheyeAttr.bEnable = RK_TRUE;
     ctx->stFisheyeAttr.bLMF = RK_FALSE;
@@ -526,8 +563,8 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1_add_3(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 0;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 960;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 540;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].enViewMode = FISHEYE_VIEW_NORMAL;
@@ -537,10 +574,10 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1_add_3(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 98; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 960; /* RW; out Imge rectangle attribute */
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase; /* RW; out Imge rectangle attribute */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 0;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 960;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 540;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].enViewMode = FISHEYE_VIEW_NORMAL;
@@ -551,9 +588,9 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1_add_3(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 540;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 960;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 540;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].enViewMode = FISHEYE_VIEW_NORMAL;
@@ -563,10 +600,10 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1_add_3(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 98; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 960; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 540;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 960;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 540;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase; /* RW; out Imge rectangle attribute */
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // ctx->stFisheyeAttr.u32RegionNum = index;
@@ -577,6 +614,22 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1_add_8(TEST_GDC_CTX_S *ctx) {
     RK_U32 fishOptParam_originX, fishOptParam_originY;
     fishOptParam_originX = 4132;
     fishOptParam_originY = 4169;
+    RK_U32 outWidthBase = 640;
+    RK_U32 outHeightBase = 360;
+
+    if (ctx->u32SrcWidth == 1920 && ctx->u32SrcHeight == 1080) {
+        outWidthBase = 640;
+        outHeightBase = 360;
+    } else if (ctx->u32SrcWidth == 2560 && ctx->u32SrcHeight == 1440) {
+        outWidthBase = 848;
+        outHeightBase = 480;
+    } else if (ctx->u32SrcWidth == 3840 && ctx->u32SrcHeight == 2160) {
+        outWidthBase = 1280;
+        outHeightBase = 720;
+    } else if (ctx->u32SrcWidth == 7680 && ctx->u32SrcHeight == 4320) {
+        outWidthBase = 2560;
+        outHeightBase = 1440;
+    }
 
     ctx->stFisheyeAttr.bEnable = RK_TRUE;
     ctx->stFisheyeAttr.bLMF = RK_FALSE;
@@ -598,8 +651,8 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 0;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 1
@@ -610,10 +663,10 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 98; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 640; /* RW; out Imge rectangle attribute */
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase; /* RW; out Imge rectangle attribute */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 0;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 2
@@ -624,10 +677,10 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 98; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 1280; /* RW; out Imge rectangle attribute */
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase * 2;
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 0;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 3
@@ -639,23 +692,23 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 360;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 4
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].enViewMode = FISHEYE_NO_TRANSFORMATION;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].enViewMode = FISHEYE_VIEW_NORMAL;
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32InRadius = 0; /* RW; inner radius of gdc correction region */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32OutRadius = 474; /* RW; out radius of gdc correction region */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Pan = 180; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 98; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 640; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 360;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase * 2;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 5
@@ -666,10 +719,10 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 98; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 1280; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 360;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase * 2;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 6
@@ -680,10 +733,10 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 98; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 720;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase; /* RW; out Imge rectangle attribute */
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase * 2;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 7
@@ -694,24 +747,24 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_1_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 98; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 640; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 720;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase * 2;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase * 2;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 8
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].enViewMode = FISHEYE_VIEW_NORMAL;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].enViewMode = FISHEYE_NO_TRANSFORMATION;
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32InRadius = 0; /* RW; inner radius of gdc correction region */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32OutRadius = 474; /* RW; out radius of gdc correction region */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Pan = 315; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 98; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 1280; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 720;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase; /* RW; out Imge rectangle attribute */
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     ctx->stFisheyeAttr.u32RegionNum = index;
@@ -722,6 +775,22 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_2p(TEST_GDC_CTX_S *ctx) {
     RK_U32 fishOptParam_originX, fishOptParam_originY;
     fishOptParam_originX = 4132;
     fishOptParam_originY = 4169;
+    RK_U32 outWidthBase = 1920;
+    RK_U32 outHeightBase = 540;
+
+    if (ctx->u32SrcWidth == 1920 && ctx->u32SrcHeight == 1080) {
+        outWidthBase = 1920;
+        outHeightBase = 540;
+    } else if (ctx->u32SrcWidth == 2560 && ctx->u32SrcHeight == 1440) {
+        outWidthBase = 2560;
+        outHeightBase = 720;
+    } else if (ctx->u32SrcWidth == 3840 && ctx->u32SrcHeight == 2160) {
+        outWidthBase = 3840;
+        outHeightBase = 1080;
+    } else if (ctx->u32SrcWidth == 7680 && ctx->u32SrcHeight == 4320) {
+        outWidthBase = 7680;
+        outHeightBase = 2160;
+    }
 
     ctx->stFisheyeAttr.bEnable = RK_TRUE;
     ctx->stFisheyeAttr.bLMF = RK_FALSE;
@@ -743,8 +812,8 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_2p(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 0;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 1920;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 540;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].enViewMode = FISHEYE_VIEW_360_PANORAMA;
@@ -755,9 +824,9 @@ RK_VOID test_mpi_gdc_desktop_ceil_mount_2p(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 2047; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 540;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 1920;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 540;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     ctx->stFisheyeAttr.u32RegionNum = index;
@@ -774,6 +843,9 @@ RK_VOID test_mpi_gdc_desktop_mount(TEST_GDC_CTX_S *ctx) {
         case TEST_GDC_DESK_CEIL_MODE_1_ADD_8:
             test_mpi_gdc_desktop_ceil_mount_1_add_8(ctx);
         break;
+         case TEST_GDC_DESK_CEIL_MODE_2P:
+            test_mpi_gdc_desktop_ceil_mount_2p(ctx);
+        break;
         default:
             RK_LOGE("not support this mode:%d", ctx->enDeskCeilMode);
         break;
@@ -789,6 +861,22 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_3(TEST_GDC_CTX_S *ctx) {
     RK_U32 fishOptParam_originX, fishOptParam_originY;
     fishOptParam_originX = 4364;
     fishOptParam_originY = 4136;
+    RK_U32 outWidthBase = 640;
+    RK_U32 outHeightBase = 360;
+
+    if (ctx->u32SrcWidth == 1920 && ctx->u32SrcHeight == 1080) {
+        outWidthBase = 960;
+        outHeightBase = 540;
+    } else if (ctx->u32SrcWidth == 2560 && ctx->u32SrcHeight == 1440) {
+        outWidthBase = 1280;
+        outHeightBase = 720;
+    } else if (ctx->u32SrcWidth == 3840 && ctx->u32SrcHeight == 2160) {
+        outWidthBase = 1920;
+        outHeightBase = 1080;
+    } else if (ctx->u32SrcWidth == 7680 && ctx->u32SrcHeight == 4320) {
+        outWidthBase = 3840;
+        outHeightBase = 2160;
+    }
 
     ctx->stFisheyeAttr.bEnable = RK_TRUE;
     ctx->stFisheyeAttr.bLMF = RK_FALSE;
@@ -808,8 +896,8 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_3(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 0;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 960;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 540;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].enViewMode = FISHEYE_VIEW_NORMAL;
@@ -819,10 +907,10 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_3(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 180; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 960; /* RW; out Imge rectangle attribute */
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase; /* RW; out Imge rectangle attribute */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 0;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 960;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 540;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].enViewMode = FISHEYE_VIEW_NORMAL;
@@ -833,9 +921,9 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_3(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 540;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 960;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 540;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].enViewMode = FISHEYE_VIEW_NORMAL;
@@ -845,10 +933,10 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_3(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 153; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 960; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 540;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 960;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 540;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase; /* RW; out Imge rectangle attribute */
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // ctx->stFisheyeAttr.u32RegionNum = index;
@@ -859,6 +947,22 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_8(TEST_GDC_CTX_S *ctx) {
     RK_U32 fishOptParam_originX, fishOptParam_originY;
     fishOptParam_originX = 4364;
     fishOptParam_originY = 4136;
+    RK_U32 outWidthBase = 640;
+    RK_U32 outHeightBase = 360;
+
+    if (ctx->u32SrcWidth == 1920 && ctx->u32SrcHeight == 1080) {
+        outWidthBase = 640;
+        outHeightBase = 360;
+    } else if (ctx->u32SrcWidth == 2560 && ctx->u32SrcHeight == 1440) {
+        outWidthBase = 848;
+        outHeightBase = 480;
+    } else if (ctx->u32SrcWidth == 3840 && ctx->u32SrcHeight == 2160) {
+        outWidthBase = 1280;
+        outHeightBase = 720;
+    } else if (ctx->u32SrcWidth == 7680 && ctx->u32SrcHeight == 4320) {
+        outWidthBase = 2560;
+        outHeightBase = 1440;
+    }
 
     ctx->stFisheyeAttr.bEnable = RK_TRUE;
     ctx->stFisheyeAttr.bLMF = RK_FALSE;
@@ -880,8 +984,8 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 0;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 1
@@ -892,10 +996,10 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 180; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 640; /* RW; out Imge rectangle attribute */
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase; /* RW; out Imge rectangle attribute */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 0;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 2
@@ -906,10 +1010,10 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 207; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 1280; /* RW; out Imge rectangle attribute */
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase * 2;
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 0;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 3
@@ -921,9 +1025,9 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 360;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 4 scale
@@ -934,10 +1038,10 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 180; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 640; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 360;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase; /* RW; out Imge rectangle attribute */
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 5
@@ -948,10 +1052,10 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 153; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 1280; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 360;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase * 2;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 6
@@ -963,9 +1067,9 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 0; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 720;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase * 2;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 7
@@ -976,10 +1080,10 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 180; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 640; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 720;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase; /* RW; out Imge rectangle attribute */
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase * 2;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     // 8
@@ -990,10 +1094,10 @@ RK_VOID test_mpi_gdc_wall_mount_1p_add_8(TEST_GDC_CTX_S *ctx) {
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32Tilt = 207; /* RW; Range: [0, 360] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32HorZoom = 4095; /* RW; Range: [1, 4095] */
     ctx->stFisheyeAttr.astFishEyeRegionAttr[index].u32VerZoom = 4095; /* RW; Range: [1, 4095] */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = 1280; /* RW; out Imge rectangle attribute */
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = 720;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = 640;
-    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = 360;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32X = outWidthBase * 2;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.s32Y = outHeightBase * 2;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Width = outWidthBase;
+    ctx->stFisheyeAttr.astFishEyeRegionAttr[index].stOutRect.u32Height = outHeightBase;
     index++;
 
     ctx->stFisheyeAttr.u32RegionNum = index;
@@ -1409,9 +1513,11 @@ int main(int argc, const char **argv) {
         OPT_INTEGER('\0', "mount_type", &(ctx->stFisheyeAttr.enMountMode),
                      "set mount type(default 2;(0:desktop mount 1:ceiling mount 2:wall mount))", NULL, 0, 0),
         OPT_INTEGER('\0', "desk_ceil_mode", &(ctx->enDeskCeilMode),
-                      "set desk or ceil mode(default 2;(0:1p+1 1:2p 2:1+3 3:1+4 4:1p+6 5:1+8))", NULL, 0, 0),
+                      "set desk or ceil mode(default 2;(0:1p+1 1:2p 2:1+3 3:1+4(not implement)"
+                      "4:1p+6(not implement) 5:1+8))", NULL, 0, 0),
         OPT_INTEGER('\0', "wall_mode", &(ctx->enWallMode),
-                      "set wall moode(default 1;(0:1p 1:1p+3 2:1p+4 3:1p+8))", NULL, 0, 0),
+                      "set wall moode(default 1;(0:1p(not implement) 1:1p+3 2:1p+4(not implement)"
+                      "3:1p+8))", NULL, 0, 0),
         OPT_INTEGER('\0', "task_sum", &(ctx->s32TaskSum),
                      "set test task sum(default 1)", NULL, 0, 0),
         OPT_INTEGER('\0', "show_point", &(ctx->u32ShowPoint),
@@ -1423,7 +1529,8 @@ int main(int argc, const char **argv) {
                      "set point len(default 3000, when ctx->u32ShowPoint > 0 valid;"
                      "range:[0, line image perimeter])", NULL, 0, 0),
         OPT_INTEGER('\0', "vo_resolution", &(ctx->stVoOutputResolution),
-                     "set change param test(default 4;(4:1080p30 10:1080p60 31:3840*2160p30))", NULL, 0, 0),
+                     "set change param test(default 4;(4:1080p30 10:1080p60 31:3840*2160p30"
+                     "41:7680*4320p30))", NULL, 0, 0),
         OPT_INTEGER('\0', "vo_chn_x", &(ctx->stChnRect.s32X),
                     "vo chn attr rect x.default(0)", NULL, 0, 0),
         OPT_INTEGER('\0', "vo_chn_y", &(ctx->stChnRect.s32Y),
@@ -1455,6 +1562,10 @@ int main(int argc, const char **argv) {
     if (ctx->stVoOutputResolution == 31) {
         ctx->u32VoWidth = 3840;
         ctx->u32VoHeight = 2160;
+    } else if (ctx->stVoOutputResolution >= VO_OUTPUT_7680x4320_24 &&
+               ctx->stVoOutputResolution <= VO_OUTPUT_7680x4320_60) {
+        ctx->u32VoWidth = 7680;
+        ctx->u32VoHeight = 4320;
     }
 
     mpi_gdc_test_show_options(ctx);

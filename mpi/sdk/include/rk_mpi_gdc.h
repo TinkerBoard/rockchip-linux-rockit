@@ -53,10 +53,12 @@ RK_S32 RK_MPI_GDC_FisheyePosQueryDst2SrcArray(const GDC_FISHEYE_POINT_QUERY_ATTR
                                                 const POINT_S *pastDstPoint,
                                                 POINT_S *pastSrcPoint);
 RK_S32 RK_MPI_GDC_FisheyePosQueryDst2Pano(const GDC_FISHEYE_POINT_QUERY_ATTR_S *pstFisheyePointQueryAttr,
+                                            const VIDEO_FRAME_INFO_S *pstVideoInfo,
                                             const RK_U32 u32PanoRegionIndex,
                                             const POINT_S *pstDstPoint,
                                             POINT_S *pstPanoPoint);
 RK_S32 RK_MPI_GDC_FisheyePosQueryDst2PanoArray(const GDC_FISHEYE_POINT_QUERY_ATTR_S *pstFisheyePointQueryAttr,
+                                                const VIDEO_FRAME_INFO_S *pstVideoInfo,
                                                 const RK_U32 u32PanoRegionIndex,
                                                 const RK_U32 u32PointNum,
                                                 const POINT_S *pastDstPoint,

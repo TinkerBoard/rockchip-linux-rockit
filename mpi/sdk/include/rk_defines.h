@@ -60,7 +60,7 @@ extern "C" {
 #define VO_MAX_PHY_DEV_NUM             4 /* max physical dev num */
 
 /* For AUDIO */
-#define AI_DEV_MAX_NUM                 2
+#define AI_DEV_MAX_NUM                 8
 #define AI_MAX_CHN_NUM                 1
 #define AO_DEV_MAX_NUM                 8
 #define AO_MAX_CHN_NUM                 3

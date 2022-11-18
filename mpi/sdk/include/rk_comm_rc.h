@@ -1,19 +1,5 @@
-/*
- * Copyright 2020 Rockchip Electronics Co. LTD
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
+/* GPL-2.0 WITH Linux-syscall-note OR Apache 2.0 */
+/* Copyright (c) 2021 Fuzhou Rockchip Electronics Co., Ltd */
 
 #ifndef INCLUDE_RT_MPI_RK_COMM_RC_H_
 #define INCLUDE_RT_MPI_RK_COMM_RC_H_
@@ -185,6 +171,10 @@ typedef struct rkVENC_PARAM_H264_S {
     RK_U32 u32MinIQp;  // RW; min qp for i frame,can not be larger than u32MaxIQp
     RK_S32 s32DeltIpQp;  // RW; Range:[-7, 7]; pppp..i delta qp between the mean of p and I
     RK_S32 s32MaxReEncodeTimes;  // RW; Range:[0, 3]; Range:max number of re-encode times.
+    RK_U32 u32FrmMaxQp; // RW; Range:[0, 51];the frame max QP value
+    RK_U32 u32FrmMinQp; // RW; Range:[0, 51];the frame min QP value, recommended larger than u32MinQp
+    RK_U32 u32FrmMaxIQp; // RW; Range:[0, 51];the I frame max QP value
+    RK_U32 u32FrmMinIQp; // RW; Range:[0, 51];the I frame min QP value, recommended larger than u32MinIQp
 } VENC_PARAM_H264_S;
 
 /* The param of h265e */
@@ -197,6 +187,10 @@ typedef struct rkVENC_PARAM_H265_S {
     RK_U32 u32MinIQp;  // RW; min qp for i frame,can not be larger than u32MaxIQp
     RK_S32 s32DeltIpQp;  // RW; Range:[-7, 7]; pppp..i delta qp between the mean of p and I
     RK_S32 s32MaxReEncodeTimes;  // RW; Range:[0, 3]; Range:max number of re-encode times.
+    RK_U32 u32FrmMaxQp; // RW; Range:[0, 51];the frame max QP value
+    RK_U32 u32FrmMinQp; // RW; Range:[0, 51];the frame min QP value, recommended larger than u32MinQp
+    RK_U32 u32FrmMaxIQp; // RW; Range:[0, 51];the I frame max QP value
+    RK_U32 u32FrmMinIQp; // RW; Range:[0, 51];the I frame min QP value, recommended larger than u32MinIQp
 } VENC_PARAM_H265_S;
 
 /* The param of mjpege */
