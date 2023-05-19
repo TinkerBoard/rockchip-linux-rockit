@@ -167,8 +167,8 @@ typedef struct rkAIO_ATTR_S {
 } AIO_ATTR_S;
 
 typedef struct rkAI_CHN_PARAM_S {
-    RK_U32 u32UsrFrmDepth;
-    RK_U32 u32UsrFrmCount;
+    RK_S32 s32UsrFrmDepth;
+    RK_S32 s32UsrFrmCount;
 	AUDIO_LOOPBACK_MODE_E enLoopbackMode;
 } AI_CHN_PARAM_S;
 
@@ -234,6 +234,23 @@ typedef struct rkAUDIO_FADE_S {
     AUDIO_FADE_RATE_E enFadeOutRate;
 } AUDIO_FADE_S;
 
+typedef enum rkAUDIO_VOLUME_CURVE_E {
+    AUDIO_CURVE_UNSET     = 0,
+    AUDIO_CURVE_LINEAR    = 1,
+    AUDIO_CURVE_LOGARITHM = 2,
+    AUDIO_CURVE_CUSTOMIZE = 3,
+
+    AUDIO_CURVE_BUTT
+} AUDIO_VOLUME_CURVE_E;
+
+typedef struct rkAUDIO_VOLUME_CURVE_S {
+    AUDIO_VOLUME_CURVE_E enCurveType;
+    RK_S32               s32Resolution;
+    RK_FLOAT             fMinDB;
+    RK_FLOAT             fMaxDB;
+    RK_U32              *pCurveTable;
+} AUDIO_VOLUME_CURVE_S;
+
 /*Defines the configure parameters of AI saving file.*/
 typedef struct rkAUDIO_SAVE_FILE_INFO_S {
     RK_BOOL     bCfg;
@@ -278,23 +295,44 @@ typedef struct rkAI_AED_CONFIG_S {
 typedef struct rkAI_AED_RESULT_S {
     RK_BOOL               bAcousticEventDetected;
     RK_BOOL               bLoudSoundDetected;
+    RK_FLOAT              lsdResult;
 } AI_AED_RESULT_S;
 
 typedef RK_VOID (*AI_BCD_CB)(void);
 
 typedef struct rkAI_BCD_CONFIG_S {
-    RK_S32                sUserMode; /* 0:auto mode  1:user mode  */
-    RK_S32                sBypass;
-    RK_S32                sAlarmThreshold; /* Range: [0 100] */
-    RK_S32                sTimeLimit;
-    RK_S32                sTimeLimitThresholdCount;
-    RK_S32                sIntervalTime;
-    AI_BCD_CB             cbBcd; /* Callback function for  babycry */
+    RK_S32                mFrameLen;       // Statistics frame length, the longer it is, the harder it is to wake up
+    RK_S32                mBlankFrameMax;  // Reset the frame length, and re-statistics when the frame length exceeds it
+    RK_FLOAT              mCryEnergy;
+    RK_FLOAT              mJudgeEnergy;
+    RK_FLOAT              mCryThres1;
+    RK_FLOAT              mCryThres2;
 } AI_BCD_CONFIG_S;
 
 typedef struct rkAI_BCD_RESULT_S {
-    RK_BOOL               bBabyCryDetected;
+    RK_BOOL               bBabyCry;
 } AI_BCD_RESULT_S;
+
+typedef struct rkAI_BUZ_CONFIG_S {
+    RK_S32                mFrameLen;       // Statistics frame length, the longer it is, the harder it is to wake up
+    RK_S32                mBlankFrameMax;  // Reset the frame length, and re-statistics when the frame length exceeds it
+    RK_FLOAT              mEnergyMean;
+    RK_FLOAT              mEnergyMax;
+    RK_FLOAT              mBuzThres1;
+    RK_FLOAT              mBuzThres2;
+} AI_BUZ_CONFIG_S;
+
+typedef struct rkAI_BUZ_RESULT_S {
+    RK_BOOL               bBuzz;
+} AI_BUZ_RESULT_S;
+
+typedef struct rkAI_GBS_CONFIG_S {
+    RK_S32                mFrameLen;       // Statistics frame length, the longer it is, the harder it is to wake up
+} AI_GBS_CONFIG_S;
+
+typedef struct rkAI_GBS_RESULT_S {
+    RK_BOOL               bGbs;
+} AI_GBS_RESULT_S;
 
 /**Defines the configure parameters of ANR.*/
 typedef struct rkAUDIO_ANR_CONFIG_S {

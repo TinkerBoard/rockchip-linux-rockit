@@ -32,6 +32,15 @@ RK_S32 TEST_SYS_FuzzyCompareFrameByFile(
             const char *pFileName, VIDEO_FRAME_INFO_S *pstVideoFrame, RK_DOUBLE dThreshold);
 RK_S32 TEST_SYS_FuzzyCompareFrame(VIDEO_FRAME_INFO_S *pstVideoFrame, RK_DOUBLE dThreshold);
 
+RK_S32 TEST_SYS_AvsBindVpss(AVS_GRP AvsGrp, AVS_CHN AvsChn, VPSS_GRP VpssGrp);
+RK_S32 TEST_SYS_AvsUnbindVpss(AVS_GRP AvsGrp, AVS_CHN AvsChn, VPSS_GRP VpssGrp);
+
+RK_S32 TEST_SYS_AvsBindVo(AVS_GRP AvsGrp, AVS_CHN AvsChn, VO_DEV VoDev, VO_CHN VoChn);
+RK_S32 TEST_SYS_AvsUnbindVo(AVS_GRP AvsGrp, AVS_CHN AvsChn, VO_DEV VoDev, VO_CHN VoChn);
+
+RK_S32 TEST_SYS_VpssBindAvs(VPSS_GRP VpssGrp, VPSS_CHN VpssChn, AVS_GRP AvsGrp, AVS_PIPE AvsPipe);
+RK_S32 TEST_SYS_VpssUnbindAvs(VPSS_GRP VpssGrp, VPSS_CHN VpssChn, AVS_GRP AvsGrp, AVS_PIPE AvsPipe);
+
 RK_S32 TEST_SYS_VpssBindVo(VPSS_GRP VpssGrp, VPSS_CHN VpssChn, VO_DEV VoDev, VO_CHN VoChn);
 RK_S32 TEST_SYS_VpssUnbindVo(VPSS_GRP VpssGrp, VPSS_CHN VpssChn, VO_DEV VoDev, VO_CHN VoChn);
 

@@ -45,6 +45,8 @@ RK_S32 RK_MPI_AVS_ReleaseChnFrame(AVS_GRP AVSGrp, AVS_CHN AVSChn,
 RK_S32 RK_MPI_AVS_SetModParam(const AVS_MOD_PARAM_S *pstModParam);
 RK_S32 RK_MPI_AVS_GetModParam(AVS_MOD_PARAM_S *pstModParam);
 
+RK_S32 RK_MPI_AVS_GetFinalLut(AVS_GRP AVSGrp, AVS_FINAL_LUT_S *pstFinalLut);
+
 #ifdef __cplusplus
 #if __cplusplus
 }

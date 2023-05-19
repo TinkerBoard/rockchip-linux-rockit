@@ -1498,24 +1498,24 @@ static RK_S32 Sample_VO_CreateGFXData(RK_U32 u32Width, RK_U32 u32Height, RK_U32 
     RK_MPI_VO_GetFrameInfo(*pMblk, &stFrameInfo);
     if (foramt == RK_FMT_RGB888) {
         if (u32Width == 1920 && u32Height == 1080 && value == 0)
-            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/res/res_1080P_RGB_0.yuv");
+            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/vo/res_1080P_RGB_0.yuv");
         else if (u32Width == 1920 && u32Height == 1080 && value == 1 )
-            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/res/res_1080P_RGB_1.yuv");
+            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/vo/res_1080P_RGB_1.yuv");
         else if (u32Width == 1024 && u32Height == 768 && value == 0 )
-            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/res/res_768P_RGB_0.yuv");
+            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/vo/res_768P_RGB_0.yuv");
         else if (u32Width == 1024 && u32Height == 768 && value == 1)
-            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/res/res_768P_RGB_1.yuv");
+            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/vo/res_768P_RGB_1.yuv");
         else
-            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/res/res_480P_RGB.yuv");
+            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/vo/res_480P_RGB.yuv");
     } else if (foramt == RK_FMT_RGBA8888) {
         if (u32Width == 1920 && u32Height == 1080 && value == 0 )
-            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/res/res_1080P_RGBA.yuv");
+            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/vo/res_1080P_RGBA.yuv");
         else if (u32Width == 1920 && u32Height == 1080 && value == 1 )
-            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/res/res_1080P2_RGBA.yuv");
+            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/vo/res_1080P2_RGBA.yuv");
         else if (u32Width == 1024 && u32Height == 768)
-            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/res/res_768P_RGBA.yuv");
+            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/vo/res_768P_RGBA.yuv");
         else
-            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/res/res_480P_RGBA.yuv");
+            Sample_VO_GetPictureData(&stFrameInfo, "/userdata/test/vo/res_480P_RGBA.yuv");
     } else {
         Sample_VO_DrawUI(&stFrameInfo, foramt, value);
     }

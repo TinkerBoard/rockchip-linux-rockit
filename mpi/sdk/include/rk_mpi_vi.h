@@ -22,12 +22,16 @@ RK_S32 RK_MPI_VI_GetDevBindPipe(VI_DEV ViDev, VI_DEV_BIND_PIPE_S *pstDevBindPipe
 RK_S32 RK_MPI_VI_GetDevIsEnable(VI_DEV ViDev);
 RK_S32 RK_MPI_VI_QueryDevStatus(VI_DEV Videv, VI_DEV_STATUS_S *pstDevStatus);
 
+RK_S32 RK_MPI_VI_StartPipe(VI_PIPE ViPipe);
+RK_S32 RK_MPI_VI_StopPipe(VI_PIPE ViPipe);
 /* 2 for vi chn */
 RK_S32 RK_MPI_VI_SetChnAttr(VI_PIPE ViPipe, VI_CHN ViChn, const VI_CHN_ATTR_S *pstChnAttr);
 RK_S32 RK_MPI_VI_GetChnAttr(VI_PIPE ViPipe, VI_CHN ViChn, VI_CHN_ATTR_S *pstChnAttr);
 
 RK_S32 RK_MPI_VI_EnableChn(VI_PIPE ViPipe, VI_CHN ViChn);
+RK_S32 RK_MPI_VI_EnableChnExt(VI_PIPE ViPipe, VI_CHN ViChn);
 RK_S32 RK_MPI_VI_DisableChn(VI_PIPE ViPipe, VI_CHN ViChn);
+RK_S32 RK_MPI_VI_DisableChnExt(VI_PIPE ViPipe, VI_CHN ViChn);
 RK_S32 RK_MPI_VI_PauseChn(VI_PIPE ViPipe, VI_CHN ViChn);
 RK_S32 RK_MPI_VI_ResumeChn(VI_PIPE ViPipe, VI_CHN ViChn);
 RK_S32 RK_MPI_VI_GetChnFrame(VI_PIPE ViPipe, VI_CHN ViChn, VIDEO_FRAME_INFO_S *pstFrameInfo, RK_S32 s32MilliSec);
@@ -59,6 +63,10 @@ RK_S32 RK_MPI_VI_GetChnStream(VI_PIPE ViPipe, VI_CHN ViChn, VI_STREAM_S *pstStre
 RK_S32 RK_MPI_VI_ReleaseChnStream(VI_PIPE ViPipe, VI_CHN ViChn, const VI_STREAM_S *pstStream);
 RK_S32 RK_MPI_VI_RegChnEventCallback(VI_PIPE ViPipe, VI_CHN ViChn, const VI_EVENT_CALL_BACK_S *pstCallback);
 
+RK_S32 RK_MPI_VI_GetEptz(VI_PIPE ViPipe, VI_CHN ViChn,  VI_CROP_INFO_S *stCropInfo);
+RK_S32 RK_MPI_VI_SetEptz(VI_PIPE ViPipe, VI_CHN ViChn,  VI_CROP_INFO_S stCropInfo);
+RK_S32 RK_MPI_VI_GetChnMirrorFlip(VI_PIPE ViPipe, VI_CHN ViChn, VI_ISP_MIRROR_FLIP_S *pstMirrFlip);
+RK_S32 RK_MPI_VI_SetChnMirrorFlip(VI_PIPE ViPipe, VI_CHN ViChn, VI_ISP_MIRROR_FLIP_S stMirrFlip);
 #ifdef __cplusplus
 #if __cplusplus
 }

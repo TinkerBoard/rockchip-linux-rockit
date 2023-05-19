@@ -270,6 +270,7 @@ typedef enum rkVI_CONNECT_STATE_E {
 typedef struct rkVI_CONNECT_INFO_S {
     RK_U32 u32Width;
     RK_U32 u32Height;
+    RK_FLOAT f32FrameRate;
     PIXEL_FORMAT_E enPixFmt;
     VI_CONNECT_STATE_E enConnect;
 } VI_CONNECT_INFO_S;

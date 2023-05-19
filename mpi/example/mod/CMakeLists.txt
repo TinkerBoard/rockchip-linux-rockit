@@ -36,6 +36,10 @@ set(RK_MPI_TEST_VDEC_SRC
     test_mpi_vdec.cpp
 )
 
+set(RK_MPI_TEST_ALL_SRC
+    test_mpi_all.cpp
+)
+
 set(RK_MPI_TEST_VENC_SRC
     test_mpi_venc.cpp
 )
@@ -58,6 +62,10 @@ set(RK_MPI_TEST_VO_SRC
 
 set(RK_MPI_TEST_AENC_SRC
     test_mpi_aenc.cpp
+)
+
+set(RK_MPI_TEST_AMIX_SRC
+    test_mpi_amix.cpp
 )
 
 set(RK_MPI_TEST_VI_SRC
@@ -97,14 +105,6 @@ add_executable(rk_mpi_vpss_test ${RK_MPI_TEST_VPSS_SRC} ${RK_MPI_TEST_COMMON_SRC
 target_link_libraries(rk_mpi_vpss_test ${ROCKIT_DEP_COMMON_LIBS})
 install(TARGETS rk_mpi_vpss_test RUNTIME DESTINATION "bin")
 
-#--------------------------
-# rk_mpi_avs_test
-#--------------------------
-add_executable(rk_mpi_avs_test ${RK_MPI_TEST_AVS_SRC} ${RK_MPI_TEST_COMMON_SRC})
-target_link_libraries(rk_mpi_avs_test ${ROCKIT_DEP_COMMON_LIBS})
-install(TARGETS rk_mpi_avs_test RUNTIME DESTINATION "bin")
-
-#--------------------------
 # rk_mpi_vgs_test
 #--------------------------
 add_executable(rk_mpi_vgs_test ${RK_MPI_TEST_VGS_SRC} ${RK_MPI_TEST_COMMON_SRC})
@@ -131,6 +131,13 @@ install(TARGETS rk_mpi_sys_test RUNTIME DESTINATION "bin")
 add_executable(rk_mpi_vdec_test ${RK_MPI_TEST_VDEC_SRC} ${RK_MPI_TEST_COMMON_SRC})
 target_link_libraries(rk_mpi_vdec_test ${ROCKIT_DEP_COMMON_LIBS})
 install(TARGETS rk_mpi_vdec_test RUNTIME DESTINATION "bin")
+
+#--------------------------
+# rk_mpi_all_test
+#--------------------------
+add_executable(rk_mpi_all_test ${RK_MPI_TEST_ALL_SRC} ${RK_MPI_TEST_COMMON_SRC})
+target_link_libraries(rk_mpi_all_test ${ROCKIT_DEP_COMMON_LIBS})
+install(TARGETS rk_mpi_all_test RUNTIME DESTINATION "bin")
 
 #--------------------------
 # rk_mpi_venc_test
@@ -199,3 +206,9 @@ install(TARGETS rk_mpi_gdc_test RUNTIME DESTINATION "bin")
 add_executable(rk_mpi_avio_test ${RK_MPI_TEST_AVIO_SRC} ${RK_MPI_TEST_COMMON_SRC})
 target_link_libraries(rk_mpi_avio_test ${ROCKIT_DEP_COMMON_LIBS})
 install(TARGETS rk_mpi_avio_test RUNTIME DESTINATION "bin")
+#--------------------------
+# rk_mpi_amix_test
+#--------------------------
+add_executable(rk_mpi_amix_test ${RK_MPI_TEST_AMIX_SRC} ${RK_MPI_TEST_COMMON_SRC})
+target_link_libraries(rk_mpi_amix_test ${ROCKIT_DEP_COMMON_LIBS})
+install(TARGETS rk_mpi_amix_test RUNTIME DESTINATION "bin")

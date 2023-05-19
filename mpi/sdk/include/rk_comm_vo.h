@@ -131,6 +131,7 @@ typedef enum rkEN_VOU_ERR_CODE_E {
 #define VO_INTF_HDMI1                  (0x01L << 14)
 #define VO_INTF_DP                     (0x01L << 15)
 #define VO_INTF_DP1                    (0x01L << 16)
+#define VO_INTF_DEFAULT                (0x01L << 17)
 
 #define VO_INTF_NUM                     17
 
@@ -154,6 +155,7 @@ typedef enum rkVO_INTF_SYNC_E {
 
     VO_OUTPUT_576P50, /* 720  x  576 at 50 Hz. */
     VO_OUTPUT_480P60, /* 720  x  480 at 60 Hz. */
+    VO_OUTPUT_1280P60, /* 720  x  1280 at 60 Hz. */
 
     VO_OUTPUT_800x600_60, /* VESA 800 x 600 at 60 Hz (non-interlaced) */
     VO_OUTPUT_1024x768_60, /* VESA 1024 x 768 at 60 Hz (non-interlaced) */
@@ -233,7 +235,8 @@ typedef struct rkVO_CHN_ATTR_S {
     RK_BOOL bEnKeyColor;/* Enable key color or not when pixel format BGRA5551/RGBA5551 */
     RK_U32 u32KeyColor; /* Key color value of pixel format BGRA5551/RGBA5551, B[0:4] G[5:9] R[10:14] */
     MIRROR_E enMirror; /* RW, Mirror */
-    ROTATION_E enRotation; /* RW, rotation. */
+    ROTATION_E enRotation;    /* RW, rotation. */
+    RK_U32 u32MaxChnQueue;    /* vo channel max queue length */
 } VO_CHN_ATTR_S;
 
 typedef struct rkVO_CHN_PARAM_S {
@@ -351,6 +354,7 @@ typedef struct rkVO_VIDEO_LAYER_ATTR_S {
     RK_U32 u32DispFrmRt; /* RW; Display frame rate */
     PIXEL_FORMAT_E enPixFormat; /* RW; Pixel format of the video layer */
     RK_BOOL bBypassFrame; /* RW; Whether to bypass frame to video layer */
+    RK_BOOL bLowDelay; /* RW; Whether start composer at once when channel 0 recive buffer */
     COMPRESS_MODE_E enCompressMode; /* RW; Video Layer output compress mode */
     DYNAMIC_RANGE_E enDstDynamicRange; /* RW; Video Layer output dynamic range type */
 } VO_VIDEO_LAYER_ATTR_S;

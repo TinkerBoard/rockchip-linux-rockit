@@ -32,6 +32,7 @@ MB_BLK   RK_MPI_MB_VirAddr2Handle(RK_VOID *pstVirAddr);
 RK_S32   RK_MPI_MB_UniqueId2Fd(RK_S32 s32UniqueId);
 
 RK_S32   RK_MPI_MB_InquireUserCnt(MB_BLK mb);
+RK_S32   RK_MPI_MB_AddUserCnt(MB_BLK mb);
 
 RK_S32   RK_MPI_MB_SetModPoolConfig(MB_UID_E enMbUid, const MB_CONFIG_S *pstMbConfig);
 RK_S32   RK_MPI_MB_GetModPoolConfig(MB_UID_E enMbUid, MB_CONFIG_S *pstMbConfig);

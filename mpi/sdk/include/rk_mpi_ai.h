@@ -19,6 +19,9 @@ RK_S32 RK_MPI_AI_Enable(AUDIO_DEV AiDevId);
 RK_S32 RK_MPI_AI_Disable(AUDIO_DEV AiDevId);
 RK_S32 RK_MPI_AI_EnableChn(AUDIO_DEV AiDevId, AI_CHN AiChn);
 RK_S32 RK_MPI_AI_DisableChn(AUDIO_DEV AiDevId, AI_CHN AiChn);
+RK_S32 RK_MPI_AI_EnableDataRead(AUDIO_DEV AiDevId, AI_CHN AiChn);
+RK_S32 RK_MPI_AI_DisableDataRead(AUDIO_DEV AiDevId, AI_CHN AiChn);
+RK_S32 RK_MPI_AI_SendFrame(AUDIO_DEV AiDevId, AO_CHN AiChn, const AUDIO_FRAME_S *pstFrm, RK_S32 s32MilliSec);
 RK_S32 RK_MPI_AI_GetFrame(AUDIO_DEV AiDevId, AI_CHN AiChn,
                                  AUDIO_FRAME_S *pstFrm, AEC_FRAME_S *pstAecFrm , RK_S32 s32MilliSec);
 RK_S32 RK_MPI_AI_ReleaseFrame(AUDIO_DEV AiDevId, AI_CHN AiChn,
@@ -29,6 +32,7 @@ RK_S32 RK_MPI_AI_EnableReSmp(AUDIO_DEV AiDevId, AI_CHN AiChn, AUDIO_SAMPLE_RATE_
 RK_S32 RK_MPI_AI_DisableReSmp(AUDIO_DEV AiDevId, AI_CHN AiChn);
 RK_S32 RK_MPI_AI_SetTrackMode(AUDIO_DEV AiDevId, AUDIO_TRACK_MODE_E enTrackMode);
 RK_S32 RK_MPI_AI_GetTrackMode(AUDIO_DEV AiDevId, AUDIO_TRACK_MODE_E *penTrackMode);
+RK_S32 RK_MPI_AI_SetVolumeCurve(AUDIO_DEV AiDevId, AUDIO_VOLUME_CURVE_S *pvolumeCurve);
 RK_S32 RK_MPI_AI_SetVolume(AUDIO_DEV AiDevId, RK_S32 s32VolumeDb);
 RK_S32 RK_MPI_AI_GetVolume(AUDIO_DEV AiDevId, RK_S32 *ps32VolumeDb);
 RK_S32 RK_MPI_AI_SetMute(AUDIO_DEV AiDevId, RK_BOOL bEnable, const AUDIO_FADE_S *pstFade);
@@ -58,6 +62,18 @@ RK_S32 RK_MPI_AI_GetBcdAttr(AUDIO_DEV AiDevId, AI_CHN AiChn, AI_BCD_CONFIG_S *ps
 RK_S32 RK_MPI_AI_EnableBcd(AUDIO_DEV AiDevId, AI_CHN AiChn);
 RK_S32 RK_MPI_AI_DisableBcd(AUDIO_DEV AiDevId, AI_CHN AiChn);
 RK_S32 RK_MPI_AI_GetBcdResult(AUDIO_DEV AiDevId, AI_CHN AiChn, AI_BCD_RESULT_S *pstBcdResult);
+
+RK_S32 RK_MPI_AI_SetBuzAttr(AUDIO_DEV AiDevId, AI_CHN AiChn, const AI_BUZ_CONFIG_S *pstBuzConfig);
+RK_S32 RK_MPI_AI_GetBuzAttr(AUDIO_DEV AiDevId, AI_CHN AiChn, AI_BUZ_CONFIG_S *pstBuzConfig);
+RK_S32 RK_MPI_AI_EnableBuz(AUDIO_DEV AiDevId, AI_CHN AiChn);
+RK_S32 RK_MPI_AI_DisableBuz(AUDIO_DEV AiDevId, AI_CHN AiChn);
+RK_S32 RK_MPI_AI_GetBuzResult(AUDIO_DEV AiDevId, AI_CHN AiChn, AI_BUZ_RESULT_S *pstBuzResult);
+
+RK_S32 RK_MPI_AI_SetGbsAttr(AUDIO_DEV AiDevId, AI_CHN AiChn, const AI_GBS_CONFIG_S *pstGbsConfig);
+RK_S32 RK_MPI_AI_GetGbsAttr(AUDIO_DEV AiDevId, AI_CHN AiChn, AI_GBS_CONFIG_S *pstGbsConfig);
+RK_S32 RK_MPI_AI_EnableGbs(AUDIO_DEV AiDevId, AI_CHN AiChn);
+RK_S32 RK_MPI_AI_DisableGbs(AUDIO_DEV AiDevId, AI_CHN AiChn);
+RK_S32 RK_MPI_AI_GetGbsResult(AUDIO_DEV AiDevId, AI_CHN AiChn, AI_GBS_RESULT_S *pstGbsResult);
 
 #ifdef __cplusplus
 #if __cplusplus

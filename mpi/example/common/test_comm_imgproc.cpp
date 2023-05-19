@@ -37,7 +37,7 @@ static void get_rgb_color(RK_U32 *R, RK_U32 *G, RK_U32 *B, RK_S32 x, RK_S32 y, R
 }
 
 static void fill_MPP_FMT_RGB565(RK_U8 *p, RK_U32 R, RK_U32 G, RK_U32 B, RK_U32 be) {
-    // MPP_FMT_RGB565 = ffmpeg: rgb565be
+    // MPP_FMT_RGB565 = tmedia: rgb565be
     // 16 bit pixel     MSB  -------->  LSB
     //                 (rrrr,rggg,gggb,bbbb)
     // big    endian   |  byte 0 |  byte 1 |
@@ -55,7 +55,7 @@ static void fill_MPP_FMT_RGB565(RK_U8 *p, RK_U32 R, RK_U32 G, RK_U32 B, RK_U32 b
 }
 
 static void fill_MPP_FMT_BGR565(RK_U8 *p, RK_U32 R, RK_U32 G, RK_U32 B, RK_U32 be) {
-    // MPP_FMT_BGR565 = ffmpeg: bgr565be
+    // MPP_FMT_BGR565 = tmedia: bgr565be
     // 16 bit pixel     MSB  -------->  LSB
     //                 (bbbb,bggg,gggr,rrrr)
     // big    endian   |  byte 0 |  byte 1 |

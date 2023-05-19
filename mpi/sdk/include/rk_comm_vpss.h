@@ -51,6 +51,7 @@ typedef struct rkVPSS_GRP_ATTR_S {
     DYNAMIC_RANGE_E            enDynamicRange;    /* RW; DynamicRange of source image. */
     FRAME_RATE_CTRL_S          stFrameRate;       /* Grp frame rate contrl. */
     COMPRESS_MODE_E            enCompressMode;    /* RW; Reference frame compress mode */
+    RK_U32                     u32MaxQueue;       /* RW; Grp Max input queue length */
 } VPSS_GRP_ATTR_S;
 
 typedef enum rkVPSS_CHN_MODE_E {

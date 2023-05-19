@@ -98,6 +98,8 @@ typedef struct rkOVERLAY_ATTR_S {
     RK_U32 u32ClutNum;
     /* color loop up table, only support BGRA8888 format now. */
     RK_U32 u32Clut[RGN_CLUT_NUM];
+    /* ex overlay fiter device type, now only support venc module*/
+    VIDEO_PROC_DEV_TYPE_E enVProcDev;
 } OVERLAY_ATTR_S;
 
 typedef struct rkOVERLAY_CHN_ATTR_S {

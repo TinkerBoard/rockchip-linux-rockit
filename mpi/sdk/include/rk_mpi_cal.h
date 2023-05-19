@@ -18,6 +18,7 @@ RK_S32 RK_MPI_CAL_COMM_GetPicBufferSize(const PIC_BUF_ATTR_S *pstBufAttr, MB_PIC
 RK_S32 RK_MPI_CAL_TDE_GetPicBufferSize(const PIC_BUF_ATTR_S *pstBufAttr, MB_PIC_CAL_S *pstPicCal);
 RK_S32 RK_MPI_CAL_VGS_GetPicBufferSize(const PIC_BUF_ATTR_S *pstBufAttr, MB_PIC_CAL_S *pstPicCal);
 RK_S32 RK_MPI_CAL_VDEC_GetPicBufferSize(const VDEC_PIC_BUF_ATTR_S *pstBufAttr, MB_PIC_CAL_S *pstPicCal);
+RK_S32 RK_MPI_CAL_AVS_GetFinalLutBufferSize(const PIC_BUF_ATTR_S *pstBufAttr, MB_PIC_CAL_S *pstPicCal);
 
 RK_U32 RK_MPI_CAL_VGS_GetPicVirWidth(RK_U32 u32Width, PIXEL_FORMAT_E enPixelFormat);
 RK_U32 RK_MPI_CAL_VGS_GetPicVirHeight(RK_U32 u32Height, PIXEL_FORMAT_E enPixelFormat);
